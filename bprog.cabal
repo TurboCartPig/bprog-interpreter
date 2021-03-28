@@ -1,0 +1,61 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 76fcd19262920701d451c69343fd3b6649bb4d1a591ede3d4da0508e948a1215
+
+name:           bprog
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/turbocartpig/bprog#readme>
+homepage:       https://github.com/turbocartpig/bprog#readme
+bug-reports:    https://github.com/turbocartpig/bprog/issues
+author:         Dennis Kristiansen <denniskr@stud.ntnu.no>
+maintainer:     Dennis Kristiansen <denniskr@stud.ntnu.no>
+copyright:      2021 Dennis Kristiansen
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+
+source-repository head
+  type: git
+  location: https://github.com/turbocartpig/bprog
+
+library
+  exposed-modules:
+      Lib
+  other-modules:
+      Paths_bprog
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+  default-language: Haskell2010
+
+executable bprog-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_bprog
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , bprog
+  default-language: Haskell2010
+
+test-suite bprog-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_bprog
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , bprog
+  default-language: Haskell2010

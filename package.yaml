@@ -1,0 +1,40 @@
+name: bprog
+version: 0.1.0.0
+github: "turbocartpig/bprog"
+license: MIT
+author: "Dennis Kristiansen <denniskr@stud.ntnu.no>"
+maintainer: "Dennis Kristiansen <denniskr@stud.ntnu.no>"
+copyright: "2021 Dennis Kristiansen"
+
+extra-source-files:
+  - README.md
+
+description: Please see the README on GitHub at <https://github.com/turbocartpig/bprog#readme>
+
+dependencies:
+  - base >= 4.7 && < 5
+
+library:
+  source-dirs: src
+
+executables:
+  bprog-exe:
+    main: Main.hs
+    source-dirs: app
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies:
+      - bprog
+
+tests:
+  bprog-test:
+    main: Spec.hs
+    source-dirs: test
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies:
+      - bprog
