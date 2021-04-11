@@ -1,3 +1,4 @@
+-- | The Types module defines the types of all the various types of tokens the program can parse.
 module Types (
     Stack, Token,
     Operator (OAdd, OSub, OMul, ODiv, ODivI, OGreater, OLess, OEqual, OAnd, OOr, ONot),
