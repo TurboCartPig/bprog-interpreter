@@ -1,6 +1,8 @@
-module Types
-  (Stack, Token, Operator (OAdd, OSub, OMul, ODiv, ODivI, OGreater, OLess, OEqual, OAnd, OOr, ONot), Value (VInt, VFloat, VString))
-    where
+module Types (
+    Stack, Token,
+    Operator (OAdd, OSub, OMul, ODiv, ODivI, OGreater, OLess, OEqual, OAnd, OOr, ONot),
+    Value (VInt, VFloat, VString, VList)
+  ) where
 
 type Stack = [Value]
 

@@ -3,8 +3,9 @@ module Parser where
 
 import           Control.Applicative hiding (many, some)
 import           Control.Monad
-import qualified Data.Char (isAlphaNum)
-import           Text.Read (readMaybe)
+import qualified Data.Char  (isAlphaNum)
+import           Data.Maybe (fromMaybe)
+import           Text.Read  (readMaybe)
 import           Types
 
 -- | Construct a Maybe from a char if it is equal to another char.
@@ -45,7 +46,8 @@ parseVFloat :: [String] -> Maybe (Value, [String])
 parseVFloat []     = Nothing
 parseVFloat (w:ws) = (, ws) . VFloat <$> readMaybe w
 
--- | Parse a String into a Value.
+-- | Parse a String into a Value VString.
+-- | Where a string looks like "a string". Note the lack of spaces around the quotes.
 --
 -- >>> parseVString ["\"Hei", "hoo\"", "1.2"]
 -- Just (VString "Hei hoo",["1.2"])
@@ -68,5 +70,20 @@ parseVString ws = if (head . head $ ws) == '"'
     -- Remove surrounding double quotes
     xs'' = tail . init $ xs'
 
+-- | Parse a List into a Value VList.
+-- | Where a list looks like [ "a string", 12, 1.2 ]. Note the spaces around the brackets.
 parseVList :: [String] -> Maybe (Value, [String])
-parseVList = undefined
+parseVList [] = Nothing
+parseVList (w:ws) = if w == "["
+  then (, ys) . VList <$> xs'
+  else Nothing
+  where
+    (xs, _:ys) = break (== "]") ws -- FIXME: Breaks nested lists.
+    xs' = parseVListPart xs
+
+
+parseVListPart :: [String] -> Maybe [Value]
+parseVListPart [] = Nothing
+parseVListPart ws = do
+  (xs, ys) <- parseValue ws
+  Just $ xs : fromMaybe [] (parseVListPart ys)
