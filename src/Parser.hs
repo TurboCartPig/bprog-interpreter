@@ -1,56 +1,72 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
-
+{-# LANGUAGE TupleSections #-}
 module Parser where
 
-import           Control.Applicative        hiding (many, some) -- Prefer functions from Megaparsec
+import           Control.Applicative hiding (many, some)
 import           Control.Monad
-import           Data.Text                  (Text)
-import           Data.Void
-import           Text.Megaparsec            hiding (State)
-import           Text.Megaparsec.Char
-import qualified Text.Megaparsec.Char.Lexer as Lex
+import qualified Data.Char (isAlphaNum)
+import           Text.Read (readMaybe)
 import           Types
 
-type Parser = Parsec Void Text
+-- | Construct a Maybe from a char if it is equal to another char.
+-- | This enables do notation further down.
+char :: Char -> Char -> Maybe Char
+char a b = if a == b then Just a else Nothing
 
-spaceC :: Parser ()
-spaceC = Lex.space space1 empty empty
+-- | isAlphaNum for strings.
+isAlphaNum :: String -> Bool
+isAlphaNum = all Data.Char.isAlphaNum
 
-symbol :: Text -> Parser Text
-symbol = Lex.symbol spaceC
+-- | Check if a string contains only alphanumeric characters.
+alphanumeric :: String -> Maybe String
+alphanumeric s = if isAlphaNum s then Just s else Nothing
 
-lexeme :: Parser a -> Parser a
-lexeme = Lex.lexeme spaceC
+parse :: String -> [Value]
+parse s = let
+    ws = words s
+  in
+    parse' ws
 
--- | Parse input into Operator.
-pOperator :: Parser Operator
-pOperator = choice
-    [ OAdd     <$ string "+",
-      OSub     <$ string "-",
-      OMul     <$ string "*",
-      ODiv     <$ string "/",
-      ODivI    <$ string "div",
-      OGreater <$ string ">",
-      OLess    <$ string "<",
-      OEqual   <$ string "==",
-      OAnd     <$ string "&&",
-      OOr      <$ string "||",
-      ONot     <$ string "not"
-    ]
+parse' :: [String] -> [Value]
+parse' [] = []
+parse' ws = case parseValue ws of
+              Nothing      -> error "Fuck"
+              Just (x, xs) -> x:parse' xs
 
--- | Parse a quoted string from input.
-pString :: Parser String
-pString = do
-  _ <- char '"'
-  manyTill Lex.charLiteral (char '"')
+parseValue :: [String] -> Maybe (Value, [String])
+parseValue ws = parseVInt ws <|> parseVFloat ws <|> parseVString ws <|> parseVList ws
 
--- | Parse a list of format [x, y, z] where x, y, and z are elements, from input.
-pList :: Parser [Value]
-pList = undefined
+-- | Parse an Int into a Value.
+parseVInt :: [String] -> Maybe (Value, [String])
+parseVInt []     = Nothing
+parseVInt (w:ws) = (, ws) . VInt <$> readMaybe w
 
-pValue :: Parser Value
-pValue = undefined
+-- | Parse a Float into a Value.
+parseVFloat :: [String] -> Maybe (Value, [String])
+parseVFloat []     = Nothing
+parseVFloat (w:ws) = (, ws) . VFloat <$> readMaybe w
 
--- pSequence :: Parser Sequence
--- pSequence = undefined
+-- | Parse a String into a Value.
+--
+-- >>> parseVString ["\"Hei", "hoo\"", "1.2"]
+-- Just (VString "Hei hoo",["1.2"])
+--
+-- >>> parseVString ["\"Hello\""]
+-- Just (VString "Hello",[])
+--
+-- >>> parseVString ["123", "\"hoo\""]
+-- Nothing
+parseVString :: [String] -> Maybe (Value, [String])
+parseVString [] = Nothing
+parseVString ws = if (head . head $ ws) == '"'
+  then Just (VString xs'', ys)
+  else Nothing
+  where
+    -- xs and y are part of the string, ys is the rest of input not part of string
+    (xs, y:ys) = break (\x -> last x == '"') ws
+    -- Concat all the parts of the string back into a continues string
+    xs' = unwords $ xs ++ [y]
+    -- Remove surrounding double quotes
+    xs'' = tail . init $ xs'
+
+parseVList :: [String] -> Maybe (Value, [String])
+parseVList = undefined

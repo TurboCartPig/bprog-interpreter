@@ -1,11 +1,12 @@
 module Types
-  (Stack, Token, Operator (OAdd, OSub, OMul, ODiv, ODivI, OGreater, OLess, OEqual, OAnd, OOr, ONot), Value)
+  (Stack, Token, Operator (OAdd, OSub, OMul, ODiv, ODivI, OGreater, OLess, OEqual, OAnd, OOr, ONot), Value (VInt, VFloat, VString))
     where
 
 type Stack = [Value]
 
 type Sequence = [Token]
 
+-- | A top level token that the user can write as part of a bprog program.
 data Token
   = Op Operator
   | Val Value
@@ -26,6 +27,7 @@ data Operator
   | ONot
     deriving(Show, Eq)
 
+-- | A Value that can be placed on the stack.
 data Value
   -- | A integer number.
   = VInt Int
@@ -34,5 +36,5 @@ data Value
   -- | A string.
   | VString String
   -- | A list of tokens.
-  | VList [Token]
+  | VList [Value]
     deriving(Show, Eq)
