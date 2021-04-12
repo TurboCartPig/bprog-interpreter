@@ -2,7 +2,7 @@
 module Types (
     Stack, Token (Val, Op),
     Operator (OAssign, OAdd, OSub, OMul, ODiv, ODivI, OGreater, OLess, OEqual, OAnd, OOr, ONot),
-    Value (VInt, VFloat, VString, VList)
+    Value (VInt, VFloat, VBool, VString, VList)
   ) where
 
 type Stack = [Value]
