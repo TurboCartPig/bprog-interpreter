@@ -45,6 +45,7 @@ parseValue ws =
   first Val         <$> (
     parseVInt ws    <|>
     parseVFloat ws  <|>
+    parseVBool ws   <|>
     parseVString ws <|>
     parseVList ws
   )
@@ -71,6 +72,14 @@ parseVInt (w:ws) = (, ws) . VInt <$> readMaybe w
 parseVFloat :: [String] -> Maybe (Value, [String])
 parseVFloat []     = Nothing
 parseVFloat (w:ws) = (, ws) . VFloat <$> readMaybe w
+
+-- | Parse a boolean into a Value.
+parseVBool :: [String] -> Maybe (Value, [String])
+parseVBool []     = Nothing
+parseVBool (w:ws) = case w of
+                      "true"  -> Just . (,ws) . VBool $ True
+                      "false" -> Just . (,ws) . VBool $ False
+                      _       -> Nothing
 
 -- | Parse a String into a Value VString.
 -- Where a string looks like "a string". Note the lack of spaces around the quotes.

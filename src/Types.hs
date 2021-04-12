@@ -37,6 +37,8 @@ data Value
   = VInt Int
   -- | A floating point number.
   | VFloat Float
+  -- | A boolean.
+  | VBool Bool
   -- | A string.
   | VString String
   -- | A list of tokens.
