@@ -6,9 +6,10 @@ module Parser where
 
 import           Control.Applicative hiding (many, some)
 import           Control.Monad
-import qualified Data.Char  (isAlphaNum)
-import           Data.Maybe (fromMaybe)
-import           Text.Read  (readMaybe)
+import           Data.Bifunctor (Bifunctor (first))
+import qualified Data.Char      (isAlphaNum)
+import           Data.Maybe     (fromMaybe)
+import           Text.Read      (readMaybe)
 import           Types
 
 -- | Construct a Maybe from a char if it is equal to another char.
@@ -25,22 +26,28 @@ alphanumeric :: String -> Maybe String
 alphanumeric s = if isAlphaNum s then Just s else Nothing
 
 -- | Top level parse function, takes string from file or repl and parses it into tokens.
-parse :: String -> [Value]
+parse :: String -> Maybe [Token]
 parse s = let
     ws = words s
   in
     parse' ws
 
 -- | Parse a list of words into tokens
-parse' :: [String] -> [Value]
-parse' [] = []
-parse' ws = case parseValue ws of
-              Nothing      -> error "Fuck"
-              Just (x, xs) -> x:parse' xs
+parse' :: [String] -> Maybe [Token]
+parse' [] = Just []
+parse' ws = case parseOperator ws <|> parseValue ws of
+              Nothing      -> Nothing
+              Just (x, xs) -> (x :) <$> parse' xs
 
 -- | Parses a list of words into a Value.
-parseValue :: [String] -> Maybe (Value, [String])
-parseValue ws = parseVInt ws <|> parseVFloat ws <|> parseVString ws <|> parseVList ws
+parseValue :: [String] -> Maybe (Token, [String])
+parseValue ws =
+  first Val         <$> (
+    parseVInt ws    <|>
+    parseVFloat ws  <|>
+    parseVString ws <|>
+    parseVList ws
+  )
 
 -- | Parse an Int into a Value.
 --
@@ -107,5 +114,38 @@ parseVList (w:ws) = if w == "["
 parseVListParts :: [String] -> Maybe [Value]
 parseVListParts [] = Nothing
 parseVListParts ws = do
-  (xs, ys) <- parseValue ws
+  (Val xs, ys) <- parseValue ws
   Just $ xs : fromMaybe [] (parseVListParts ys)
+
+-- | Parse a symbol into an Operator.
+parseOperator :: [String] -> Maybe (Token, [String])
+parseOperator [] = Nothing
+parseOperator (w:ws) =
+  first Op       <$> (
+    parseAssign  <|>
+    parseAdd     <|>
+    parseSub     <|>
+    parseMul     <|>
+    parseDiv     <|>
+    parseDivI    <|>
+    parseGreater <|>
+    parseLess    <|>
+    parseEqual   <|>
+    parseAnd     <|>
+    parseOr      <|>
+    parseNot
+  )
+  where
+    lookup sym op = if w == sym then Just (op, ws) else Nothing
+    parseAssign = lookup ":=" OAssign
+    parseAdd = lookup "+" OAdd
+    parseSub = lookup "-" OSub
+    parseMul = lookup "*" OMul
+    parseDiv = lookup "/" ODiv
+    parseDivI = lookup "div" ODivI
+    parseGreater = lookup ">" OGreater
+    parseLess = lookup "<" OLess
+    parseEqual = lookup "==" OEqual
+    parseAnd = lookup "&&" OAnd
+    parseOr = lookup "||" OOr
+    parseNot = lookup "not" ONot

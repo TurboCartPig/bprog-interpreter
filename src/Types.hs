@@ -1,7 +1,7 @@
 -- | The Types module defines the types of all the various types of tokens the program can parse.
 module Types (
-    Stack, Token,
-    Operator (OAdd, OSub, OMul, ODiv, ODivI, OGreater, OLess, OEqual, OAnd, OOr, ONot),
+    Stack, Token (Val, Op),
+    Operator (OAssign, OAdd, OSub, OMul, ODiv, ODivI, OGreater, OLess, OEqual, OAnd, OOr, ONot),
     Value (VInt, VFloat, VString, VList)
   ) where
 
@@ -17,7 +17,8 @@ data Token
 
 -- | Binary or unary operator, acting on the top elements of the stack.
 data Operator
-  = OAdd
+  = OAssign
+  | OAdd
   | OSub
   | OMul
   | ODiv
