@@ -2,7 +2,7 @@
 module Types (
   Stack, Token (Val, Bi, Op),
   Operator (OAssign, OAdd, OSub, OMul, ODiv, ODivI, OGreater, OLess, OEqual, OAnd, OOr, ONot),
-  Builtin (BDup, BSwp, BPop),
+  Builtin (BDup, BSwp, BPop, BHead, BTail, BEmpty, BLength, BCons, BAppend),
   Value (VInt, VFloat, VBool, VString, VList)
 ) where
 
@@ -37,9 +37,17 @@ data Operator
 
 -- | Builtin operation that can be applied to some value.
 data Builtin
+  -- Stack operations first
   = BDup
   | BSwp
   | BPop
+  -- Then list operations
+  | BHead
+  | BTail
+  | BEmpty
+  | BLength
+  | BCons
+  | BAppend
     deriving(Show, Eq)
 
 -- | A Value that can be placed on the stack.

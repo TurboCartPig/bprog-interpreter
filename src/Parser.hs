@@ -154,7 +154,12 @@ parseOperator (w:ws) =
 parseBuiltin :: [String] -> Maybe (Token, [String])
 parseBuiltin (w:ws) =
   (, ws) . Bi <$> (
-    (BDup     <$ string "dup" w) <|>
-    (BSwp     <$ string "swp" w) <|>
-    (BPop     <$ string "pop" w)
+    (BDup     <$ string "dup"    w) <|>
+    (BSwp     <$ string "swp"    w) <|>
+    (BPop     <$ string "pop"    w) <|>
+    (BHead    <$ string "head"   w) <|>
+    (BTail    <$ string "tail"   w) <|>
+    (BEmpty   <$ string "empty"  w) <|>
+    (BCons    <$ string "length" w) <|>
+    (BAppend  <$ string "cons"   w)
   )

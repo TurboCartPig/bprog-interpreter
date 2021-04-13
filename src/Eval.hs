@@ -26,9 +26,9 @@ eval' st token =
     -- Push the new value on top of the stack
     Val v -> v:st
     -- Evaluate the result of applying a builtin to the stack
-    Bi bi -> evalBuiltin st bi
+    Bi bi -> evalBuiltin bi st
     -- Evaluate new value, and push it onto the stack
-    Op op -> evalOperator st op
+    Op op -> evalOperator op st
 
 -- | Evaluate a binary operation on two values, with specific types.
 evalBinaryOp' :: Value -> Value -> Operator -> Value
@@ -78,27 +78,89 @@ evalUnaryOp (VBool v)  ONot = VBool (not v)
 evalUnaryOp _ _ = error "Tried to evaluate an unary operator on unsupported data type or with no-unary operator"
 
 -- | Evaluate an operator by deciding if it is binary or unary and calling the right function.
-evalOperator :: Stack -> Operator -> Stack
-evalOperator st op
+evalOperator :: Operator -> Stack -> Stack
+evalOperator op st
   | op `elem` [OAdd, OSub, OMul, ODiv, ODivI, OGreater, OLess, OEqual, OAnd, OOr]
           = let (a:b:st') = st in evalBinaryOp a b op : st'
   | op == ONot
           = let (a:st') = st in evalUnaryOp a op : st'
   | otherwise = error "Operator not implemented"
 
-evalBuiltin :: Stack -> Builtin -> Stack
-evalBuiltin st BDup = evalBDup st
-evalBuiltin st BSwp = evalBSwp st
-evalBuiltin st BPop = evalBPop st
-evalBuiltin _ _     = error "Tried to evaluate an unsupported builtin"
+evalBuiltin :: Builtin -> Stack -> Stack
+evalBuiltin BDup    = evalBDup
+evalBuiltin BSwp    = evalBSwp
+evalBuiltin BPop    = evalBPop
+evalBuiltin BHead   = evalBHead
+evalBuiltin BTail   = evalBTail
+evalBuiltin BEmpty  = evalBEmpty
+evalBuiltin BLength = evalBLength
+evalBuiltin BCons   = evalBCons
+evalBuiltin BAppend = evalBAppend
+evalBuiltin _       = error "Tried to evaluate an unsupported builtin"
 
 -- The following builtins will simply terminate the execution of the interpreter if they are called on an invalid stack
 
+-- | Duplicate the top element of stack.
+--
+-- >>> evalBDup [VInt 1]
+-- [VInt 1,VInt 1]
 evalBDup :: Stack -> Stack
 evalBDup (top:tail) = top : top : tail
 
+-- | Swap the top elements of stack.
+--
+-- >>> evalBSwp [VInt 1, VInt 2]
+-- [VInt 2,VInt 1]
 evalBSwp :: Stack -> Stack
 evalBSwp (a:b:st) = b:a:st
 
+-- | Pop the top element off stack.
+--
+-- >>> evalBPop [VInt 1, VInt 2]
+-- [VInt 2]
 evalBPop :: Stack -> Stack
 evalBPop (_:st) = st
+
+-- | Get the head of the list on top of the stack
+--
+-- >>> evalBHead [VList [VInt 1, VInt 2 ,VInt 3]]
+-- [VInt 1]
+evalBHead :: Stack -> Stack
+evalBHead ((VList xs):st) = head xs:st
+
+-- | Get the tail of the list on top of the stack
+--
+-- >>> evalBTail [VList [VInt 1, VInt 2, VInt 3]]
+-- [VList [VInt 2,VInt 3]]
+evalBTail :: Stack -> Stack
+evalBTail ((VList xs):st) = VList (tail xs):st
+
+-- | Check if the list on top of the stack is empty.
+--
+-- >>> evalBEmpty [VList [VInt 1]]
+-- >>> evalBEmpty [VList []]
+-- [VBool False]
+-- [VBool True]
+evalBEmpty :: Stack -> Stack
+evalBEmpty ((VList xs):st) = VBool (null xs):st
+
+-- | Get the length of the list on top of the stack.
+--
+-- >>> evalBLength [VList [VInt 1, VInt 2]]
+-- [VInt 2]
+evalBLength :: Stack -> Stack
+evalBLength ((VList xs):st) = VInt (length xs):st
+
+-- | Cons the top element of stack onto the the list that is the second element of the stack.
+--
+-- >>> evalBCons [VInt 1, VList  [VInt 2, VInt 3]]
+-- [VList [VInt 1,VInt 2,VInt 3]]
+evalBCons :: Stack -> Stack
+evalBCons (x:(VList xs):st) = VList (x:xs):st
+
+-- | Append the list on top of the stack onto the list second stack
+--
+-- >>> evalBAppend [VList [VInt 3, VInt 4], (VList [VInt 1, VInt 2])]
+-- [VList [VInt 1,VInt 2,VInt 3,VInt 4]]
+evalBAppend :: Stack -> Stack
+evalBAppend ((VList xs):(VList ys):st) = VList (ys ++ xs):st
