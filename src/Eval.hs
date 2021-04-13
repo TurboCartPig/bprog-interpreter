@@ -45,16 +45,27 @@ evalBinaryOp' (VBool a)  (VBool b)  OAnd     = VBool  $ a && b
 evalBinaryOp' (VBool a)  (VBool b)  OOr      = VBool  $ a || b
 evalBinaryOp' _ _ _ = error "Tried to apply binary operator to incompatible operands"
 
--- | Evaluate a binary operation on two values. Coerces ints into floats, but disallows all other coercions
+-- | Evaluate a binary operation on two values.
+-- Coerces ints into floats, but disallows all other coercions
 evalBinaryOp :: Value -> Value -> Operator -> Value
-evalBinaryOp (VInt a)   (VInt b)   op = evalBinaryOp' (VInt a)                    (VInt b) op
-evalBinaryOp (VFloat a) (VFloat b) op = evalBinaryOp' (VFloat a)                  (VFloat b) op
-evalBinaryOp (VInt a)   (VFloat b) op = evalBinaryOp' (VFloat . fromIntegral $ a) (VFloat b) op
-evalBinaryOp (VFloat a) (VInt b)   op = evalBinaryOp' (VFloat a)                  (VFloat . fromIntegral $ b) op
-evalBinaryOp (VBool a)  (VBool b)  op = evalBinaryOp' (VBool a)                   (VBool b) op
+-- Implement special rule for floating point division on two integers
+evalBinaryOp (VInt a)   (VInt b)   ODiv = evalBinaryOp' (VFloat . fromIntegral $ a) (VFloat . fromIntegral $ b) ODiv
+-- Normal integer operation
+evalBinaryOp (VInt a)   (VInt b)   op   = evalBinaryOp' (VInt a)                    (VInt b) op
+-- Normal floating point operation
+evalBinaryOp (VFloat a) (VFloat b) op   = evalBinaryOp' (VFloat a)                  (VFloat b) op
+-- Mixed integer and floating point operation results
+-- in converting integer into floating point and doing floating point operation
+evalBinaryOp (VInt a)   (VFloat b) op   = evalBinaryOp' (VFloat . fromIntegral $ a) (VFloat b) op
+-- Same as previous branch
+evalBinaryOp (VFloat a) (VInt b)   op   = evalBinaryOp' (VFloat a)                  (VFloat . fromIntegral $ b) op
+-- Normal boolean operation
+evalBinaryOp (VBool a)  (VBool b)  op   = evalBinaryOp' (VBool a)                   (VBool b) op
+-- Tried to performed illegal operation
 evalBinaryOp _ _ _ = error "Fail to coerce the operands to any valid combination"
 
--- | Evaluate a unary operation on a value. Currently not is the only unary operator.
+-- | Evaluate a unary operation on a value.
+-- Currently not is the only unary operator.
 evalUnaryOp :: Value -> Operator -> Value
 evalUnaryOp (VInt v)   ONot = VInt (-v)
 evalUnaryOp (VFloat v) ONot = VFloat (-v)
