@@ -14,6 +14,13 @@ import           Data.Maybe          (fromMaybe)
 import           Text.Read           (readMaybe)
 import           Types
 
+-- | Define the type of all the parser combinators in this module.
+-- Takes in a list of words the parse function has split the program input into.
+-- Then parse the first token out of that list of words,
+-- and return both the some token and the rest of the unparsed words if we succeed,
+-- or nothing if we fail.
+type Parser a = [String] -> Maybe (a, [String])
+
 -- | Construct a Maybe from a char if it is equal to another char.
 -- This enables do notation further down.
 char :: Char -> Char -> Maybe Char
@@ -45,7 +52,7 @@ parse' ws = case parseOperator ws <|> parseBuiltin ws <|> parseValue ws of
               Just (x, xs) -> (x :) <$> parse' xs
 
 -- | Parses a list of words into a Value.
-parseValue :: [String] -> Maybe (Token, [String])
+parseValue :: Parser Token
 parseValue ws =
   first Val         <$> (
     parseVInt ws    <|>
@@ -62,7 +69,7 @@ parseValue ws =
 --
 -- >>> parseVInt ["12.2"]
 -- Nothing
-parseVInt :: [String] -> Maybe (Value, [String])
+parseVInt :: Parser Value
 parseVInt []     = Nothing
 parseVInt (w:ws) = (, ws) . VInt <$> readMaybe w
 
@@ -74,12 +81,12 @@ parseVInt (w:ws) = (, ws) . VInt <$> readMaybe w
 --
 -- >>> parseVFloat ["12.2"]
 -- Just (VFloat 12.2,[])
-parseVFloat :: [String] -> Maybe (Value, [String])
+parseVFloat :: Parser Value
 parseVFloat []     = Nothing
 parseVFloat (w:ws) = (, ws) . VFloat <$> readMaybe w
 
 -- | Parse a boolean into a Value.
-parseVBool :: [String] -> Maybe (Value, [String])
+parseVBool :: Parser Value
 parseVBool []     = Nothing
 parseVBool (w:ws) =
   (, ws) . VBool <$> (
@@ -99,7 +106,7 @@ parseVBool (w:ws) =
 --
 -- >>> parseVString ["123", "\"hoo\""]
 -- Nothing
-parseVString :: [String] -> Maybe (Value, [String])
+parseVString :: Parser Value
 parseVString [] = Nothing
 parseVString ws = if (head . head $ ws) == '"'
   then Just (VString xs'', ys)
@@ -117,7 +124,7 @@ parseVString ws = if (head . head $ ws) == '"'
 --
 -- >>> parseVList ["[", "12", "12.2", "\"Hei", "Hoo\"", "]"]
 -- Just (VList [VInt 12,VFloat 12.2,VString "Hei Hoo"],[])
-parseVList :: [String] -> Maybe (Value, [String])
+parseVList :: Parser Value
 parseVList [] = Nothing
 parseVList (w:ws) = if w == "["
   then (, ys) . VList <$> xs'
@@ -134,7 +141,7 @@ parseVListParts ws = do
   Just $ xs : fromMaybe [] (parseVListParts ys)
 
 -- | Parse a symbol into an Operator.
-parseOperator :: [String] -> Maybe (Token, [String])
+parseOperator :: Parser Token
 parseOperator [] = Nothing
 parseOperator (w:ws) =
   (, ws) . Op <$> (
@@ -151,7 +158,7 @@ parseOperator (w:ws) =
     (ONot     <$ string "not" w)
   )
 
-parseBuiltin :: [String] -> Maybe (Token, [String])
+parseBuiltin :: Parser Token
 parseBuiltin (w:ws) =
   (, ws) . Bi <$> (
     (BDup     <$ string "dup"    w) <|>
