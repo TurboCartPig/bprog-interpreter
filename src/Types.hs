@@ -48,6 +48,13 @@ data Builtin
   | BLength
   | BCons
   | BAppend
+  -- Quotation operations
+  | BExec
+  | BTimes
+  | BMap
+  | BFoldl
+  | BEach
+  | BIf
     deriving(Show, Eq)
 
 -- | A Value that can be placed on the stack.

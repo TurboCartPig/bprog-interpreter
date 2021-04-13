@@ -192,6 +192,13 @@ parseBuiltin (w:ws) =
     (BHead    <$ string "head"   w) <|>
     (BTail    <$ string "tail"   w) <|>
     (BEmpty   <$ string "empty"  w) <|>
-    (BCons    <$ string "length" w) <|>
-    (BAppend  <$ string "cons"   w)
+    (BLength  <$ string "length" w) <|>
+    (BCons    <$ string "cons"   w) <|>
+    (BAppend  <$ string "append" w) <|>
+    (BExec    <$ string "exec"   w) <|>
+    (BTimes   <$ string "times"  w) <|>
+    (BMap     <$ string "map"    w) <|>
+    (BFoldl   <$ string "foldl"  w) <|>
+    (BEach    <$ string "each"   w) <|>
+    (BIf      <$ string "if"     w)
   )

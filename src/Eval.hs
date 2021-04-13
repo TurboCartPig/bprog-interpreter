@@ -7,17 +7,17 @@ import           Parser
 import           Types
 
 -- | Top level evaluation function for any parsed program.
-eval :: [Token] -> Maybe Value
+eval :: Sequence -> Maybe Value
 eval tokens =
   let
     -- Initial stack before evaluation
-    initialS = [] :: Stack
+    initialSt = [] :: Stack
     -- Final stack after evaluation
-    finalS = foldl eval' initialS tokens
+    finalSt = eval'' tokens initialSt
   in
     -- If there is exactly one element on the stack,
     -- then we are successful, and return the element, otherwise we have failed
-    if length finalS == 1 then return . head  $ finalS else Nothing
+    if length finalSt == 1 then return . head  $ finalSt else Nothing
 
 -- | Evaluate one token from the top of the stack.
 eval' :: Stack -> Token -> Stack
@@ -29,6 +29,10 @@ eval' st token =
     Bi bi -> evalBuiltin bi st
     -- Evaluate new value, and push it onto the stack
     Op op -> evalOperator op st
+
+-- | Evaluate all the tokens in a sequence in the context of a stack.
+eval'' :: Sequence -> Stack -> Stack
+eval'' seq st = foldl eval' st seq
 
 -- | Evaluate a binary operation on two values, with specific types.
 evalBinaryOp' :: Value -> Value -> Operator -> Value
@@ -96,9 +100,17 @@ evalBuiltin BEmpty  = evalBEmpty
 evalBuiltin BLength = evalBLength
 evalBuiltin BCons   = evalBCons
 evalBuiltin BAppend = evalBAppend
-evalBuiltin _       = error "Tried to evaluate an unsupported builtin"
+evalBuiltin BExec  = evalBExec
+evalBuiltin BTimes = evalBTimes
+evalBuiltin BMap   = evalBMap
+evalBuiltin BFoldl = evalBFoldl
+evalBuiltin BEach  = evalBEach
+evalBuiltin BIf    = evalBIf
+evalBuiltin _      = error "Tried to evaluate an unsupported builtin"
 
 -- The following builtins will simply terminate the execution of the interpreter if they are called on an invalid stack
+
+-- Stack operations ---------------------------------------------------------------------------
 
 -- | Duplicate the top element of stack.
 --
@@ -120,6 +132,8 @@ evalBSwp (a:b:st) = b:a:st
 -- [VInt 2]
 evalBPop :: Stack -> Stack
 evalBPop (_:st) = st
+
+-- List operations ----------------------------------------------------------------------------
 
 -- | Get the head of the list on top of the stack
 --
@@ -164,3 +178,28 @@ evalBCons (x:(VList xs):st) = VList (x:xs):st
 -- [VList [VInt 1,VInt 2,VInt 3,VInt 4]]
 evalBAppend :: Stack -> Stack
 evalBAppend ((VList xs):(VList ys):st) = VList (ys ++ xs):st
+
+-- Quotation operations -----------------------------------------------------------------------
+
+evalQuotation :: Value -> Stack -> Stack
+evalQuotation (VQuotation inst) = eval'' inst
+evalQuotation _ = error "Tried to evaluate something that is not a quotation as a quotation"
+
+evalBExec :: Stack -> Stack
+evalBExec (q:st) = evalQuotation q st
+
+evalBTimes :: Stack -> Stack
+evalBTimes (_:(VInt 0):st) = st
+evalBTimes (q:(VInt n):st) = q : VInt (n-1) : evalQuotation q st
+
+evalBMap :: Stack -> Stack
+evalBMap = undefined
+
+evalBFoldl :: Stack -> Stack
+evalBFoldl = undefined
+
+evalBEach :: Stack -> Stack
+evalBEach = undefined
+
+evalBIf :: Stack -> Stack
+evalBIf = undefined
