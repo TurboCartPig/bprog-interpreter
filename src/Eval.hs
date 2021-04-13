@@ -91,22 +91,25 @@ evalOperator op st
   | otherwise = error "Operator not implemented"
 
 evalBuiltin :: Builtin -> Stack -> Stack
-evalBuiltin BDup    = evalBDup
-evalBuiltin BSwp    = evalBSwp
-evalBuiltin BPop    = evalBPop
-evalBuiltin BHead   = evalBHead
-evalBuiltin BTail   = evalBTail
-evalBuiltin BEmpty  = evalBEmpty
-evalBuiltin BLength = evalBLength
-evalBuiltin BCons   = evalBCons
-evalBuiltin BAppend = evalBAppend
-evalBuiltin BExec  = evalBExec
-evalBuiltin BTimes = evalBTimes
-evalBuiltin BMap   = evalBMap
-evalBuiltin BFoldl = evalBFoldl
-evalBuiltin BEach  = evalBEach
-evalBuiltin BIf    = evalBIf
-evalBuiltin _      = error "Tried to evaluate an unsupported builtin"
+evalBuiltin BDup          = evalBDup
+evalBuiltin BSwp          = evalBSwp
+evalBuiltin BPop          = evalBPop
+evalBuiltin BParseInteger = evalBParseInteger
+evalBuiltin BParseFloat   = evalBParseFloat
+evalBuiltin BWords        = evalBWords
+evalBuiltin BHead         = evalBHead
+evalBuiltin BTail         = evalBTail
+evalBuiltin BEmpty        = evalBEmpty
+evalBuiltin BLength       = evalBLength
+evalBuiltin BCons         = evalBCons
+evalBuiltin BAppend       = evalBAppend
+evalBuiltin BExec         = evalBExec
+evalBuiltin BTimes        = evalBTimes
+evalBuiltin BMap          = evalBMap
+evalBuiltin BFoldl        = evalBFoldl
+evalBuiltin BEach         = evalBEach
+evalBuiltin BIf           = evalBIf
+evalBuiltin _             = error "Tried to evaluate an unsupported builtin"
 
 -- The following builtins will simply terminate the execution of the interpreter if they are called on an invalid stack
 
@@ -132,6 +135,17 @@ evalBSwp (a:b:st) = b:a:st
 -- [VInt 2]
 evalBPop :: Stack -> Stack
 evalBPop (_:st) = st
+
+-- Stack operations ---------------------------------------------------------------------------
+
+evalBParseInteger :: Stack -> Stack
+evalBParseInteger ((VString s):st) = VInt (read s) : st
+
+evalBParseFloat :: Stack -> Stack
+evalBParseFloat ((VString s):st) = VFloat (read s) : st
+
+evalBWords :: Stack -> Stack
+evalBWords ((VString s):st) = VList (map VString (words s)) : st
 
 -- List operations ----------------------------------------------------------------------------
 

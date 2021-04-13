@@ -1,8 +1,9 @@
 -- | The Types module defines the types of all the various types of tokens the program can parse.
 module Types (
-  Stack, Token (Val, Bi, Op),
+  Stack, Sequence,
+  Token (Val, Bi, Op),
   Operator (OAssign, OAdd, OSub, OMul, ODiv, ODivI, OGreater, OLess, OEqual, OAnd, OOr, ONot),
-  Builtin (BDup, BSwp, BPop, BHead, BTail, BEmpty, BLength, BCons, BAppend),
+  Builtin (BDup, BSwp, BPop, BParseInteger, BParseFloat, BWords, BHead, BTail, BEmpty, BLength, BCons, BAppend, BExec, BTimes, BMap, BFoldl, BEach, BIf),
   Value (VInt, VFloat, VBool, VString, VList, VQuotation)
 ) where
 
@@ -37,11 +38,16 @@ data Operator
 
 -- | Builtin operation that can be applied to some value.
 data Builtin
-  -- Stack operations first
+  -- Stack operations
   = BDup
   | BSwp
   | BPop
-  -- Then list operations
+  -- Sting parsing operations
+  -- TODO: Implement these
+  | BParseInteger
+  | BParseFloat
+  | BWords
+  -- List operations
   | BHead
   | BTail
   | BEmpty

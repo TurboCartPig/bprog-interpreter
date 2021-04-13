@@ -186,19 +186,22 @@ parseOperator (w:ws) =
 parseBuiltin :: Parser Token
 parseBuiltin (w:ws) =
   (, ws) . Bi <$> (
-    (BDup     <$ string "dup"    w) <|>
-    (BSwp     <$ string "swp"    w) <|>
-    (BPop     <$ string "pop"    w) <|>
-    (BHead    <$ string "head"   w) <|>
-    (BTail    <$ string "tail"   w) <|>
-    (BEmpty   <$ string "empty"  w) <|>
-    (BLength  <$ string "length" w) <|>
-    (BCons    <$ string "cons"   w) <|>
-    (BAppend  <$ string "append" w) <|>
-    (BExec    <$ string "exec"   w) <|>
-    (BTimes   <$ string "times"  w) <|>
-    (BMap     <$ string "map"    w) <|>
-    (BFoldl   <$ string "foldl"  w) <|>
-    (BEach    <$ string "each"   w) <|>
-    (BIf      <$ string "if"     w)
+    (BDup          <$ string "dup"          w) <|>
+    (BSwp          <$ string "swp"          w) <|>
+    (BPop          <$ string "pop"          w) <|>
+    (BParseInteger <$ string "parseInteger" w) <|>
+    (BParseFloat   <$ string "parseFloat"   w) <|>
+    (BWords        <$ string "words"        w) <|>
+    (BHead         <$ string "head"         w) <|>
+    (BTail         <$ string "tail"         w) <|>
+    (BEmpty        <$ string "empty"        w) <|>
+    (BLength       <$ string "length"       w) <|>
+    (BCons         <$ string "cons"         w) <|>
+    (BAppend       <$ string "append"       w) <|>
+    (BExec         <$ string "exec"         w) <|>
+    (BTimes        <$ string "times"        w) <|>
+    (BMap          <$ string "map"          w) <|>
+    (BFoldl        <$ string "foldl"        w) <|>
+    (BEach         <$ string "each"         w) <|>
+    (BIf           <$ string "if"           w)
   )
