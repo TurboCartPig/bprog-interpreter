@@ -21,9 +21,14 @@ eval tokens =
 
 -- | Evaluate one token from the top of the stack.
 eval' :: Stack -> Token -> Stack
-eval' st token = case token of
-                   Val v -> v:st               -- Push the new value on top of the stack
-                   Op op -> evalOperator st op -- Evaluate new value, and push it onto the stack
+eval' st token =
+  case token of
+    -- Push the new value on top of the stack
+    Val v -> v:st
+    -- Evaluate the result of applying a builtin to the stack
+    Bi bi -> evalBuiltin st bi
+    -- Evaluate new value, and push it onto the stack
+    Op op -> evalOperator st op
 
 -- | Evaluate a binary operation on two values, with specific types.
 evalBinaryOp' :: Value -> Value -> Operator -> Value
@@ -80,3 +85,20 @@ evalOperator st op
   | op == ONot
           = let (a:st') = st in evalUnaryOp a op : st'
   | otherwise = error "Operator not implemented"
+
+evalBuiltin :: Stack -> Builtin -> Stack
+evalBuiltin st BDup = evalBDup st
+evalBuiltin st BSwp = evalBSwp st
+evalBuiltin st BPop = evalBPop st
+evalBuiltin _ _     = error "Tried to evaluate an unsupported builtin"
+
+-- The following builtins will simply terminate the execution of the interpreter if they are called on an invalid stack
+
+evalBDup :: Stack -> Stack
+evalBDup (top:tail) = top : top : tail
+
+evalBSwp :: Stack -> Stack
+evalBSwp (a:b:st) = b:a:st
+
+evalBPop :: Stack -> Stack
+evalBPop (_:st) = st

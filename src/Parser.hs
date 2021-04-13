@@ -40,7 +40,7 @@ parse s = let
 -- | Parse a list of words into tokens
 parse' :: [String] -> Maybe [Token]
 parse' [] = Just []
-parse' ws = case parseOperator ws <|> parseValue ws of
+parse' ws = case parseOperator ws <|> parseBuiltin ws <|> parseValue ws of
               Nothing      -> Nothing
               Just (x, xs) -> (x :) <$> parse' xs
 
@@ -149,4 +149,12 @@ parseOperator (w:ws) =
     (OAnd     <$ string "&&" w)  <|>
     (OOr      <$ string "||" w)  <|>
     (ONot     <$ string "not" w)
+  )
+
+parseBuiltin :: [String] -> Maybe (Token, [String])
+parseBuiltin (w:ws) =
+  (, ws) . Bi <$> (
+    (BDup     <$ string "dup" w) <|>
+    (BSwp     <$ string "swp" w) <|>
+    (BPop     <$ string "pop" w)
   )
