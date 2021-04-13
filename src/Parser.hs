@@ -8,10 +8,10 @@ module Parser (
 
 import           Control.Applicative hiding (many, some)
 import           Control.Monad
-import           Data.Bifunctor (Bifunctor (first))
-import qualified Data.Char      (isAlphaNum)
-import           Data.Maybe     (fromMaybe)
-import           Text.Read      (readMaybe)
+import           Data.Bifunctor      (Bifunctor (first))
+import qualified Data.Char           (isAlphaNum)
+import           Data.Maybe          (fromMaybe)
+import           Text.Read           (readMaybe)
 import           Types
 
 -- | Construct a Maybe from a char if it is equal to another char.
