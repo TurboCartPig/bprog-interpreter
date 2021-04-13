@@ -1,13 +1,25 @@
 -- | The Eval module defines how a parsed program is evaluated to produce one single value.
-module Eval where
+module Eval (
+  eval
+) where
 
 import           Parser
 import           Types
 
---eval :: [Token] -> Maybe Value
---eval ts = do
---    let st = []
+-- | Top level evaluation function for any parsed program.
+eval :: [Token] -> Maybe Value
+eval tokens =
+  let
+    -- Initial stack before evaluation
+    initialS = [] :: Stack
+    -- Final stack after evaluation
+    finalS = foldl eval' initialS tokens
+  in
+    -- If there is exactly one element on the stack,
+    -- then we are successful, and return the element, otherwise we have failed
+    if length finalS == 1 then return . head  $ finalS else Nothing
 
+-- | Evaluate one token from the top of the stack.
 eval' :: Stack -> Token -> Stack
 eval' st token = case token of
                    Val v -> v:st               -- Push the new value on top of the stack

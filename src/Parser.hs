@@ -2,7 +2,9 @@
 
 -- | The Parser module defines a series of parser combinators that is composes
 -- into high level parsers like the parse function.
-module Parser where
+module Parser (
+  parse
+) where
 
 import           Control.Applicative hiding (many, some)
 import           Control.Monad
