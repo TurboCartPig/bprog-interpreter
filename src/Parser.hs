@@ -47,19 +47,27 @@ parse s = let
 -- | Parse a list of words into tokens
 parse' :: [String] -> Maybe [Token]
 parse' [] = Just []
-parse' ws = case parseOperator ws <|> parseBuiltin ws <|> parseValue ws of
+parse' ws = case parseToken ws of
               Nothing      -> Nothing
               Just (x, xs) -> (x :) <$> parse' xs
+
+-- | Parse a single token from the input string.
+parseToken :: Parser Token
+parseToken ws =
+    parseOperator ws <|>
+    parseBuiltin  ws <|>
+    parseValue    ws
 
 -- | Parses a list of words into a Value.
 parseValue :: Parser Token
 parseValue ws =
-  first Val         <$> (
-    parseVInt ws    <|>
-    parseVFloat ws  <|>
-    parseVBool ws   <|>
-    parseVString ws <|>
-    parseVList ws
+  first Val <$> (
+    parseVInt       ws <|>
+    parseVFloat     ws <|>
+    parseVBool      ws <|>
+    parseVString    ws <|>
+    parseVList      ws <|>
+    parseVQuotation ws
   )
 
 -- | Parse an Int into a Value.
@@ -139,6 +147,23 @@ parseVListParts [] = Nothing
 parseVListParts ws = do
   (Val xs, ys) <- parseValue ws
   Just $ xs : fromMaybe [] (parseVListParts ys)
+
+-- | Parse a quotation (or codeblock) into a Value.
+parseVQuotation :: Parser Value
+parseVQuotation []     = Nothing
+parseVQuotation (w:ws) = if w == "{"
+  then (, ys) . VQuotation <$> xs'
+  else Nothing
+  where
+    (xs, _:ys) = break (== "}") ws -- FIXME: Same as above.
+    xs' = parseVQuotationParts xs
+
+-- | Parse the parts of a VQuotation.
+parseVQuotationParts :: [String] -> Maybe [Token]
+parseVQuotationParts [] = Nothing
+parseVQuotationParts ws = do
+  (x, ys) <- parseToken ws
+  Just $ x : fromMaybe [] (parseVQuotationParts ys)
 
 -- | Parse a symbol into an Operator.
 parseOperator :: Parser Token
