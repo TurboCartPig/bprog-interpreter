@@ -19,6 +19,9 @@ import           Types
 char :: Char -> Char -> Maybe Char
 char a b = if a == b then Just a else Nothing
 
+string :: String -> String -> Maybe String
+string a b = if a == b then Just a else Nothing
+
 -- | isAlphaNum for strings.
 isAlphaNum :: String -> Bool
 isAlphaNum = all Data.Char.isAlphaNum
@@ -78,10 +81,12 @@ parseVFloat (w:ws) = (, ws) . VFloat <$> readMaybe w
 -- | Parse a boolean into a Value.
 parseVBool :: [String] -> Maybe (Value, [String])
 parseVBool []     = Nothing
-parseVBool (w:ws) = case w of
-                      "true"  -> Just . (,ws) . VBool $ True
-                      "false" -> Just . (,ws) . VBool $ False
-                      _       -> Nothing
+parseVBool (w:ws) =
+  (, ws) . VBool <$> (
+    True         <$ string "true"  w <|>
+    False        <$ string "false" w
+  )
+
 
 -- | Parse a String into a Value VString.
 -- Where a string looks like "a string". Note the lack of spaces around the quotes.
@@ -132,31 +137,16 @@ parseVListParts ws = do
 parseOperator :: [String] -> Maybe (Token, [String])
 parseOperator [] = Nothing
 parseOperator (w:ws) =
-  first Op       <$> (
-    parseAssign  <|>
-    parseAdd     <|>
-    parseSub     <|>
-    parseMul     <|>
-    parseDiv     <|>
-    parseDivI    <|>
-    parseGreater <|>
-    parseLess    <|>
-    parseEqual   <|>
-    parseAnd     <|>
-    parseOr      <|>
-    parseNot
+  (, ws) . Op <$> (
+    (OAdd     <$ string "+" w)   <|>
+    (OSub     <$ string "-" w)   <|>
+    (OMul     <$ string "*" w)   <|>
+    (ODiv     <$ string "/" w)   <|>
+    (ODivI    <$ string "div" w) <|>
+    (OGreater <$ string ">" w)   <|>
+    (OLess    <$ string "<" w)   <|>
+    (OEqual   <$ string "==" w)  <|>
+    (OAnd     <$ string "&&" w)  <|>
+    (OOr      <$ string "||" w)  <|>
+    (ONot     <$ string "not" w)
   )
-  where
-    lookup sym op = if w == sym then Just (op, ws) else Nothing
-    parseAssign = lookup ":=" OAssign
-    parseAdd = lookup "+" OAdd
-    parseSub = lookup "-" OSub
-    parseMul = lookup "*" OMul
-    parseDiv = lookup "/" ODiv
-    parseDivI = lookup "div" ODivI
-    parseGreater = lookup ">" OGreater
-    parseLess = lookup "<" OLess
-    parseEqual = lookup "==" OEqual
-    parseAnd = lookup "&&" OAnd
-    parseOr = lookup "||" OOr
-    parseNot = lookup "not" ONot
