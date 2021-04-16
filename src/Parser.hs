@@ -21,11 +21,13 @@ import           Types
 -- or nothing if we fail.
 type Parser a = [String] -> Maybe (a, [String])
 
--- | Construct a Maybe from a char if it is equal to another char.
--- This enables do notation further down.
+-- | Parse a char into another char, and return Nothing if that failed.
+-- This is simply a building block for other parsers.
 char :: Char -> Char -> Maybe Char
 char a b = if a == b then Just a else Nothing
 
+-- | Parse a string into another string, and return Nothing if that failed.
+-- This is simply a building block for other parsers.
 string :: String -> String -> Maybe String
 string a b = if a == b then Just a else Nothing
 
@@ -45,6 +47,7 @@ parse s = let
     parse' ws
 
 -- | Parse a list of words into tokens
+-- This is basically a weird fold.
 parse' :: [String] -> Maybe [Token]
 parse' [] = Just []
 parse' ws = case parseToken ws of
@@ -94,6 +97,10 @@ parseVFloat []     = Nothing
 parseVFloat (w:ws) = (, ws) . VFloat <$> readMaybe w
 
 -- | Parse a boolean into a Value.
+--
+-- >>> parseVBool ["true"]
+--
+-- >>> parseVBool ["false"]
 parseVBool :: Parser Value
 parseVBool []     = Nothing
 parseVBool (w:ws) =

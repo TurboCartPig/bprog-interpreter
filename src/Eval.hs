@@ -90,6 +90,7 @@ evalOperator op st
           = let (a:st') = st in evalUnaryOp a op : st'
   | otherwise = error "Operator not implemented"
 
+-- | Evaluate a builtin operation onto the stack.
 evalBuiltin :: Builtin -> Stack -> Stack
 evalBuiltin BDup          = evalBDup
 evalBuiltin BSwp          = evalBSwp
@@ -138,12 +139,24 @@ evalBPop (_:st) = st
 
 -- Stack operations ---------------------------------------------------------------------------
 
+-- | Parse an integer from a string on top of the stack.
+--
+-- >>> evalBParseInteger [VString "12"]
+-- [VInt 12]
 evalBParseInteger :: Stack -> Stack
 evalBParseInteger ((VString s):st) = VInt (read s) : st
 
+-- | Parse a floating point from a string on top of the stack.
+--
+-- >>> evalBParseFloat [VString "2.4"]
+-- [VFloat 2.4]
 evalBParseFloat :: Stack -> Stack
 evalBParseFloat ((VString s):st) = VFloat (read s) : st
 
+-- | Split a string into a list of words contained in that string, from the top of the stack.
+--
+-- >>> evalBWords [VString "one two three"]
+-- [VList [VString "one",VString "two",VString "three"]]
 evalBWords :: Stack -> Stack
 evalBWords ((VString s):st) = VList (map VString (words s)) : st
 
