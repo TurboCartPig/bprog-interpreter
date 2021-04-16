@@ -58,18 +58,24 @@ evalBinaryOp' _ _ _ = error "Tried to apply binary operator to incompatible oper
 -- Coerces ints into floats, but disallows all other coercions
 evalBinaryOp :: Value -> Value -> Operator -> Value
 -- Implement special rule for floating point division on two integers
-evalBinaryOp (VInt a)   (VInt b)   ODiv = evalBinaryOp' (VFloat . fromIntegral $ a) (VFloat . fromIntegral $ b) ODiv
+evalBinaryOp (VInt a)   (VInt b)   ODiv =
+  evalBinaryOp' (VFloat . fromIntegral $ a) (VFloat . fromIntegral $ b) ODiv
 -- Normal integer operation
-evalBinaryOp (VInt a)   (VInt b)   op   = evalBinaryOp' (VInt a)                    (VInt b) op
+evalBinaryOp (VInt a)   (VInt b)   op   =
+  evalBinaryOp' (VInt a)                    (VInt b)                    op
 -- Normal floating point operation
-evalBinaryOp (VFloat a) (VFloat b) op   = evalBinaryOp' (VFloat a)                  (VFloat b) op
+evalBinaryOp (VFloat a) (VFloat b) op   =
+  evalBinaryOp' (VFloat a)                  (VFloat b)                  op
 -- Mixed integer and floating point operation results
 -- in converting integer into floating point and doing floating point operation
-evalBinaryOp (VInt a)   (VFloat b) op   = evalBinaryOp' (VFloat . fromIntegral $ a) (VFloat b) op
+evalBinaryOp (VInt a)   (VFloat b) op   =
+  evalBinaryOp' (VFloat . fromIntegral $ a) (VFloat b)                  op
 -- Same as previous branch
-evalBinaryOp (VFloat a) (VInt b)   op   = evalBinaryOp' (VFloat a)                  (VFloat . fromIntegral $ b) op
+evalBinaryOp (VFloat a) (VInt b)   op   =
+  evalBinaryOp' (VFloat a)                  (VFloat . fromIntegral $ b) op
 -- Normal boolean operation
-evalBinaryOp (VBool a)  (VBool b)  op   = evalBinaryOp' (VBool a)                   (VBool b) op
+evalBinaryOp (VBool a)  (VBool b)  op   =
+  evalBinaryOp' (VBool a)                   (VBool b)                   op
 -- Tried to performed illegal operation
 evalBinaryOp _ _ _ = error "Fail to coerce the operands to any valid combination"
 

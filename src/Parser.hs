@@ -50,16 +50,16 @@ parse s = let
 -- This is basically a weird fold.
 parse' :: [String] -> Maybe [Token]
 parse' [] = Just []
-parse' ws = case parseToken ws of
-              Nothing      -> Nothing
-              Just (x, xs) -> (x :) <$> parse' xs
+parse' ws = do
+  (token, rest) <- parseToken ws
+  (token:) <$> parse' rest
 
 -- | Parse a single token from the input string.
 parseToken :: Parser Token
 parseToken ws =
-    parseOperator ws <|>
-    parseBuiltin  ws <|>
-    parseValue    ws
+  parseOperator ws <|>
+  parseBuiltin  ws <|>
+  parseValue    ws
 
 -- | Parses a list of words into a Value.
 parseValue :: Parser Token
