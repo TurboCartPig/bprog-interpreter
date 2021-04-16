@@ -71,7 +71,8 @@ parseValue ws =
     parseVBool      ws <|>
     parseVString    ws <|>
     parseVList      ws <|>
-    parseVQuotation ws
+    parseVQuotation ws <|>
+    parseSymbol     ws
   )
 
 -- | Parse an Int into a Value.
@@ -225,3 +226,13 @@ parseBuiltin (w:ws) =
     (BEach         <$ string "each"         w) <|>
     (BIf           <$ string "if"           w)
   )
+
+-- | Parse a word into a symbol.
+-- Symbols must only contain alphanumeric characters.
+-- They can absolutely not contain []s or {}s.
+parseSymbol :: Parser Value
+parseSymbol [] = Nothing
+parseSymbol (w:ws) = do
+  symbol <- alphanumeric w
+
+  return (VSymbol symbol, ws)

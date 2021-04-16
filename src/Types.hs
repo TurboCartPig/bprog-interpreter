@@ -4,7 +4,7 @@ module Types (
   Token (Val, Bi, Op),
   Operator (OAssign, OAdd, OSub, OMul, ODiv, ODivI, OGreater, OLess, OEqual, OAnd, OOr, ONot),
   Builtin (BDup, BSwp, BPop, BParseInteger, BParseFloat, BWords, BHead, BTail, BEmpty, BLength, BCons, BAppend, BExec, BTimes, BMap, BFoldl, BEach, BIf),
-  Value (VInt, VFloat, VBool, VString, VList, VQuotation)
+  Value (VInt, VFloat, VBool, VString, VList, VQuotation, VSymbol)
 ) where
 
 -- | A stack of values that represents the internal state of the program.
@@ -77,4 +77,6 @@ data Value
   | VList [Value]
   -- | A quotation (or codeblock), containing a sequence of program tokens ready for evaluation.
   | VQuotation Sequence
+  -- | A symbol name. This will evaluate to whatever is bound to the symbol in the global symbol table.
+  | VSymbol String
     deriving(Show, Eq)
