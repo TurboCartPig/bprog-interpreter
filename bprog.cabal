@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.2.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5889b06442b9a47b48b78a6a93d1cd073ea18ffa832b8738218f8248befcb127
+-- hash: 21972357dd829ca883ece61ec6f6dde49f69847a03c84fd3acf5821292662ece
 
 name:           bprog
 version:        0.1.0.0
@@ -36,6 +36,7 @@ library
       src
   build-depends:
       base >=4.7 && <5
+    , containers >=0.6 && <0.7
   default-language: Haskell2010
 
 executable bprog-exe
@@ -48,6 +49,7 @@ executable bprog-exe
   build-depends:
       base >=4.7 && <5
     , bprog
+    , containers >=0.6 && <0.7
   default-language: Haskell2010
 
 test-suite bprog-test
@@ -61,4 +63,5 @@ test-suite bprog-test
   build-depends:
       base >=4.7 && <5
     , bprog
+    , containers >=0.6 && <0.7
   default-language: Haskell2010
