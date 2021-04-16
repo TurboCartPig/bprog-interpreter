@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "bprog:lib"
+    - path: "./app"
+      component: "bprog:exe:bprog-exe"
+    - path: "./test"
+      component: "bprog:test:bprog-test"
