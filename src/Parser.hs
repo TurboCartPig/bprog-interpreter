@@ -8,6 +8,7 @@ module Parser (
 
 import           Control.Applicative hiding (many, some)
 import           Control.Monad
+import           Control.Monad.Extra
 import           Data.Bifunctor      (Bifunctor (first))
 import qualified Data.Char           (isAlphaNum)
 import           Data.Maybe          (fromMaybe)
@@ -109,7 +110,6 @@ parseVBool (w:ws) =
     False        <$ string "false" w
   )
 
-
 -- | Parse a String into a Value VString.
 -- Where a string looks like "a string". Note the lack of spaces around the quotes.
 --
@@ -141,36 +141,48 @@ parseVString ws = if (head . head $ ws) == '"'
 -- Just (VList [VInt 12,VFloat 12.2,VString "Hei Hoo"],[])
 parseVList :: Parser Value
 parseVList [] = Nothing
-parseVList (w:ws) = if w == "["
-  then (, ys) . VList <$> xs'
-  else Nothing
-  where
-    (xs, _:ys) = break (== "]") ws -- FIXME: Breaks nested lists.
-    xs' = parseVListParts xs
+parseVList (w:ws) = do
+  _ <- string "[" w
 
--- | Parse the parts of a VList.
-parseVListParts :: [String] -> Maybe [Value]
+  (xs, w':ws') <- parseVListParts ws
+
+  _ <- string "]" w'
+
+  return (VList xs, ws')
+
+-- | Parse all the elements we can find into a list of values.
+-- This is done by looping over the words we take as input, parsing something out of those words,
+-- and then feeding the rest back into the same machinery.
+parseVListParts :: Parser [Value]
 parseVListParts [] = Nothing
-parseVListParts ws = do
-  (Val xs, ys) <- parseValue ws
-  Just $ xs : fromMaybe [] (parseVListParts ys)
+parseVListParts ws =
+  -- Here tokens is the parsed tokens,
+  -- rest and rest' are the remaining unparsed words,
+  -- and x is a parsed value.
+  return $ loop (\(tokens, rest) -> case parseValue rest of
+                                      Nothing             -> Right (tokens, rest)
+                                      Just (Val x, rest') -> Left (tokens ++ [x], rest')) ([], ws)
 
 -- | Parse a quotation (or codeblock) into a Value.
 parseVQuotation :: Parser Value
 parseVQuotation []     = Nothing
-parseVQuotation (w:ws) = if w == "{"
-  then (, ys) . VQuotation <$> xs'
-  else Nothing
-  where
-    (xs, _:ys) = break (== "}") ws -- FIXME: Same as above.
-    xs' = parseVQuotationParts xs
+parseVQuotation (w:ws) = do
+  _ <- string "{" w
 
--- | Parse the parts of a VQuotation.
-parseVQuotationParts :: [String] -> Maybe [Token]
+  (xs, w':ws') <- parseVQuotationParts ws
+
+  _ <- string "}" w'
+
+  return (VQuotation xs, ws')
+
+-- | Parse the parts of a VQuotation into a list of tokens.
+-- See parseVListParts to see how it works
+parseVQuotationParts :: Parser [Token]
 parseVQuotationParts [] = Nothing
-parseVQuotationParts ws = do
-  (x, ys) <- parseToken ws
-  Just $ x : fromMaybe [] (parseVQuotationParts ys)
+parseVQuotationParts ws =
+  return $ loop (\(tokens, rest) -> case parseToken rest of
+                                      Nothing         -> Right (tokens, rest)
+                                      Just (x, rest') -> Left (tokens ++ [x], rest')) ([], ws)
 
 -- | Parse a symbol into an Operator.
 parseOperator :: Parser Token
@@ -191,6 +203,7 @@ parseOperator (w:ws) =
   )
 
 parseBuiltin :: Parser Token
+parseBuiltin []     = Nothing
 parseBuiltin (w:ws) =
   (, ws) . Bi <$> (
     (BDup          <$ string "dup"          w) <|>
