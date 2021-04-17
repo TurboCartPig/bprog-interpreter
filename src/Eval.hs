@@ -185,8 +185,9 @@ evalBTail ((VList xs):st) = VList (tail xs):st
 -- | Check if the list on top of the stack is empty.
 --
 -- >>> evalBEmpty [VList [VInt 1]]
--- >>> evalBEmpty [VList []]
 -- [VBool False]
+--
+-- >>> evalBEmpty [VList []]
 -- [VBool True]
 evalBEmpty :: Stack -> Stack
 evalBEmpty ((VList xs):st) = VBool (null xs):st

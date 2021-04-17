@@ -101,8 +101,10 @@ parseVFloat (w:ws) = (, ws) . VFloat <$> readMaybe w
 -- | Parse a boolean into a Value.
 --
 -- >>> parseVBool ["true"]
+-- Just (VBool True,[])
 --
 -- >>> parseVBool ["false"]
+-- Just (VBool False,[])
 parseVBool :: Parser Value
 parseVBool []     = Nothing
 parseVBool (w:ws) =
