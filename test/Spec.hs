@@ -113,7 +113,7 @@ interpretSpec = do
         (VBool True)
       iit "[ 1 2 ] [ 1 2 ] =="
         (VBool True)
-      iit "[ [ ] ] [ [ ] ]"
+      iit "[ [ ] ] [ [ ] ] =="
         (VBool True)
     describe "stack operations" $ do
       iit "10 20 swp pop"

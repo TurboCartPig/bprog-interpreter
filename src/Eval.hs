@@ -39,19 +39,20 @@ evalBinaryOp' :: Value -> Value -> Operator -> Value
 evalBinaryOp' (VInt a)   (VInt b)   OAdd     = VInt   $ a + b
 evalBinaryOp' (VInt a)   (VInt b)   OSub     = VInt   $ a - b
 evalBinaryOp' (VInt a)   (VInt b)   OMul     = VInt   $ a * b
+evalBinaryOp' (VInt a)   (VInt b)   ODiv     = VFloat $ (fromIntegral a) / (fromIntegral b)
 evalBinaryOp' (VInt a)   (VInt b)   ODivI    = VInt   $ a `div` b
 evalBinaryOp' (VInt a)   (VInt b)   OGreater = VBool  $ a > b
 evalBinaryOp' (VInt a)   (VInt b)   OLess    = VBool  $ a < b
-evalBinaryOp' (VInt a)   (VInt b)   OEqual   = VBool  $ a == b
 evalBinaryOp' (VFloat a) (VFloat b) OAdd     = VFloat $ a + b
 evalBinaryOp' (VFloat a) (VFloat b) OSub     = VFloat $ a - b
 evalBinaryOp' (VFloat a) (VFloat b) OMul     = VFloat $ a * b
 evalBinaryOp' (VFloat a) (VFloat b) ODiv     = VFloat $ a / b
+evalBinaryOp' (VFloat a) (VFloat b) ODivI    = VInt   $ (floor a) `div` (floor b)
 evalBinaryOp' (VFloat a) (VFloat b) OGreater = VBool  $ a > b
 evalBinaryOp' (VFloat a) (VFloat b) OLess    = VBool  $ a < b
-evalBinaryOp' (VFloat a) (VFloat b) OEqual   = VBool  $ a == b
 evalBinaryOp' (VBool a)  (VBool b)  OAnd     = VBool  $ a && b
 evalBinaryOp' (VBool a)  (VBool b)  OOr      = VBool  $ a || b
+evalBinaryOp' a                 b   OEqual   = VBool  $ a == b
 evalBinaryOp' _ _ _ = error "Tried to apply binary operator to incompatible operands"
 
 -- | Evaluate a binary operation on two values.
@@ -73,12 +74,9 @@ evalBinaryOp (VInt a)   (VFloat b) op   =
 -- Same as previous branch
 evalBinaryOp (VFloat a) (VInt b)   op   =
   evalBinaryOp' (VFloat a)                  (VFloat . fromIntegral $ b) op
--- Normal boolean operation
-evalBinaryOp (VBool a)  (VBool b)  op   =
-  evalBinaryOp' (VBool a)                   (VBool b)                   op
--- Tried to performed illegal operation
-evalBinaryOp _ _ _ = error "Fail to coerce the operands to any valid combination"
-
+-- If no coercion rules are defined, simply try to performe the operation.
+evalBinaryOp a b op =
+  evalBinaryOp' a b op
 -- | Evaluate a unary operation on a value.
 -- Currently not is the only unary operator.
 evalUnaryOp :: Value -> Operator -> Value
@@ -91,7 +89,7 @@ evalUnaryOp _ _ = error "Tried to evaluate an unary operator on unsupported data
 evalOperator :: Operator -> Stack -> Stack
 evalOperator op st
   | op `elem` [OAdd, OSub, OMul, ODiv, ODivI, OGreater, OLess, OEqual, OAnd, OOr]
-          = let (a:b:st') = st in evalBinaryOp a b op : st'
+          = let (a:b:st') = st in evalBinaryOp b a op : st'
   | op == ONot
           = let (a:st') = st in evalUnaryOp a op : st'
   | otherwise = error "Operator not implemented"
