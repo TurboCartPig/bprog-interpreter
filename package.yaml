@@ -41,3 +41,6 @@ tests:
       - -with-rtsopts=-N
     dependencies:
       - bprog
+      - doctest
+      - hspec
+      - QuickCheck

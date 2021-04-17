@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9205ea7c6e9db13ddd521fd444a2c7640b58d52b518fdac778e2098e025d96e4
+-- hash: 95643b9b135451359c8ead3cb0c5e7f7c95df0979e61f3cf560816beadec4e16
 
 name:           bprog
 version:        0.1.0.0
@@ -63,8 +63,11 @@ test-suite bprog-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      QuickCheck
+    , base >=4.7 && <5
     , bprog
     , containers >=0.6 && <0.7
+    , doctest
     , extra >=1.7 && <1.8
+    , hspec
   default-language: Haskell2010
