@@ -167,6 +167,8 @@ evalBWords :: Stack -> Stack
 evalBWords ((VString s):st) = VList (map VString (words s)) : st
 
 -- List operations ----------------------------------------------------------------------------
+-- Some list operations are implemented on strings as well,
+-- but not everything makes sens, since we do not have a Char type.
 
 -- | Get the head of the list on top of the stack
 --
@@ -180,7 +182,8 @@ evalBHead ((VList xs):st) = head xs:st
 -- >>> evalBTail [VList [VInt 1, VInt 2, VInt 3]]
 -- [VList [VInt 2,VInt 3]]
 evalBTail :: Stack -> Stack
-evalBTail ((VList xs):st) = VList (tail xs):st
+evalBTail ((VList xs):st)   = VList (tail xs):st
+evalBTail ((VString xs):st) = VString (tail xs):st
 
 -- | Check if the list on top of the stack is empty.
 --
@@ -190,14 +193,17 @@ evalBTail ((VList xs):st) = VList (tail xs):st
 -- >>> evalBEmpty [VList []]
 -- [VBool True]
 evalBEmpty :: Stack -> Stack
-evalBEmpty ((VList xs):st) = VBool (null xs):st
+evalBEmpty ((VList xs):st)   = VBool (null xs):st
+evalBEmpty ((VString xs):st) = VBool (null xs):st
 
 -- | Get the length of the list on top of the stack.
 --
 -- >>> evalBLength [VList [VInt 1, VInt 2]]
 -- [VInt 2]
 evalBLength :: Stack -> Stack
-evalBLength ((VList xs):st) = VInt (length xs):st
+evalBLength ((VList xs):st)      = VInt (length xs):st
+evalBLength ((VString xs):st)    = VInt (length xs):st
+evalBLength ((VQuotation xs):st) = VInt (length xs):st -- How this makes any sense is beyond me
 
 -- | Cons the top element of stack onto the the list that is the second element of the stack.
 --
@@ -211,7 +217,8 @@ evalBCons ((VList xs):x:st) = VList (x:xs):st
 -- >>> evalBAppend [VList [VInt 3, VInt 4], (VList [VInt 1, VInt 2])]
 -- [VList [VInt 1,VInt 2,VInt 3,VInt 4]]
 evalBAppend :: Stack -> Stack
-evalBAppend ((VList xs):(VList ys):st) = VList (ys ++ xs):st
+evalBAppend ((VList xs):(VList ys):st)     = VList (ys ++ xs):st
+evalBAppend ((VString xs):(VString ys):st) = VString (ys ++ xs):st
 
 -- Quotation operations -----------------------------------------------------------------------
 
