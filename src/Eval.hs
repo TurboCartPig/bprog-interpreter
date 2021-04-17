@@ -201,10 +201,10 @@ evalBLength ((VList xs):st) = VInt (length xs):st
 
 -- | Cons the top element of stack onto the the list that is the second element of the stack.
 --
--- >>> evalBCons [VInt 1, VList  [VInt 2, VInt 3]]
+-- >>> evalBCons [VList  [VInt 2, VInt 3], VInt 1]
 -- [VList [VInt 1,VInt 2,VInt 3]]
 evalBCons :: Stack -> Stack
-evalBCons (x:(VList xs):st) = VList (x:xs):st
+evalBCons ((VList xs):x:st) = VList (x:xs):st
 
 -- | Append the list on top of the stack onto the list second stack
 --
