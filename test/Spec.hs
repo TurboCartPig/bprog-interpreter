@@ -2,6 +2,7 @@
 -- but they are equivilant in terms of what they test.
 module Main where
 
+import           Data.Maybe      (listToMaybe)
 import           Eval            (eval)
 import           GHC.Base
 import           Lib             (interpret)
@@ -11,16 +12,13 @@ import           Test.Hspec      (Spec, describe, hspec, it)
 import           Test.QuickCheck
 import           Types
 
+-- TODO: Implement property tests that test that all primitives parse into their respective Value.
+
 -- | `it` specialized for parser.
 pit :: String -> String -> Value -> Spec
 pit text input expected = do
   it text $ do
-    (valueify . parse $ input) == Just expected
-  where
-    -- | Turn a list of tokens into a single Value if possible
-    valueify :: Maybe [Token] -> Maybe Value
-    valueify (Just [Val x]) = return x
-    valueify _              = Nothing
+    (parse input >>= listToMaybe) == Just (Val expected)
 
 -- | `it` specialized for interpret.
 iit :: String -> Value -> Spec
