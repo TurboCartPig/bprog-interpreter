@@ -39,7 +39,6 @@ evalBinaryOp' :: Value -> Value -> Operator -> Value
 evalBinaryOp' (VInt a)   (VInt b)   OAdd     = VInt   $ a + b
 evalBinaryOp' (VInt a)   (VInt b)   OSub     = VInt   $ a - b
 evalBinaryOp' (VInt a)   (VInt b)   OMul     = VInt   $ a * b
-evalBinaryOp' (VInt a)   (VInt b)   ODiv     = VFloat $ (fromIntegral a) / (fromIntegral b)
 evalBinaryOp' (VInt a)   (VInt b)   ODivI    = VInt   $ a `div` b
 evalBinaryOp' (VInt a)   (VInt b)   OGreater = VBool  $ a > b
 evalBinaryOp' (VInt a)   (VInt b)   OLess    = VBool  $ a < b
@@ -47,7 +46,6 @@ evalBinaryOp' (VFloat a) (VFloat b) OAdd     = VFloat $ a + b
 evalBinaryOp' (VFloat a) (VFloat b) OSub     = VFloat $ a - b
 evalBinaryOp' (VFloat a) (VFloat b) OMul     = VFloat $ a * b
 evalBinaryOp' (VFloat a) (VFloat b) ODiv     = VFloat $ a / b
-evalBinaryOp' (VFloat a) (VFloat b) ODivI    = VInt   $ (floor a) `div` (floor b)
 evalBinaryOp' (VFloat a) (VFloat b) OGreater = VBool  $ a > b
 evalBinaryOp' (VFloat a) (VFloat b) OLess    = VBool  $ a < b
 evalBinaryOp' (VBool a)  (VBool b)  OAnd     = VBool  $ a && b
@@ -56,27 +54,31 @@ evalBinaryOp' a                 b   OEqual   = VBool  $ a == b
 evalBinaryOp' _ _ _ = error "Tried to apply binary operator to incompatible operands"
 
 -- | Evaluate a binary operation on two values.
--- Coerces ints into floats, but disallows all other coercions
+-- Coerces ints into floats, but disallows all other coercions.
 evalBinaryOp :: Value -> Value -> Operator -> Value
--- Implement special rule for floating point division on two integers
-evalBinaryOp (VInt a)   (VInt b)   ODiv =
+-- Implement special rule for floating point division on two integers.
+evalBinaryOp (VInt a) (VInt b) ODiv =
   evalBinaryOp' (VFloat . fromIntegral $ a) (VFloat . fromIntegral $ b) ODiv
--- Normal integer operation
-evalBinaryOp (VInt a)   (VInt b)   op   =
-  evalBinaryOp' (VInt a)                    (VInt b)                    op
--- Normal floating point operation
-evalBinaryOp (VFloat a) (VFloat b) op   =
-  evalBinaryOp' (VFloat a)                  (VFloat b)                  op
+-- Normal integer operation.
+evalBinaryOp (VInt a) (VInt b) op =
+  evalBinaryOp' (VInt a) (VInt b) op
+-- Special rule for converting floating points to ints for int division.
+evalBinaryOp (VFloat a) (VFloat b) ODivI =
+  evalBinaryOp (VInt . floor $ a) (VInt . floor $ b) ODivI
+-- Normal floating point operation.
+evalBinaryOp (VFloat a) (VFloat b) op =
+  evalBinaryOp' (VFloat a) (VFloat b) op
 -- Mixed integer and floating point operation results
--- in converting integer into floating point and doing floating point operation
-evalBinaryOp (VInt a)   (VFloat b) op   =
-  evalBinaryOp' (VFloat . fromIntegral $ a) (VFloat b)                  op
--- Same as previous branch
-evalBinaryOp (VFloat a) (VInt b)   op   =
-  evalBinaryOp' (VFloat a)                  (VFloat . fromIntegral $ b) op
--- If no coercion rules are defined, simply try to performe the operation.
+-- in converting integer into floating point and doing floating point operation.
+evalBinaryOp (VInt a) (VFloat b) op =
+  evalBinaryOp' (VFloat . fromIntegral $ a) (VFloat b) op
+-- Same as previous branch.
+evalBinaryOp (VFloat a) (VInt b) op =
+  evalBinaryOp' (VFloat a) (VFloat . fromIntegral $ b) op
+-- If no coercion rules are defined, simply try to perform the operation.
 evalBinaryOp a b op =
   evalBinaryOp' a b op
+
 -- | Evaluate a unary operation on a value.
 -- Currently not is the only unary operator.
 evalUnaryOp :: Value -> Operator -> Value
