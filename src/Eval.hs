@@ -6,7 +6,19 @@ module Eval (
 import           Parser
 import           Types
 
+-- | A type given to the IO aware part of the program,
+-- so that it can perform certain operations, and then continue,
+-- or throw an error, and terminate.
+data IOResult
+  -- | The program encountered a fatal error, and will terminate.
+  = Err String
+  -- | The program should read user input from stdin, and then resume with the input placed on top of the stack.
+  | Read Stack Sequence
+  -- | The program should print a string to stdout, and then resume the evaluation of the program with what is left of the stack and sequence.
+  | Print Stack Sequence String
+
 -- | Top level evaluation function for any parsed program.
+-- TODO: Drag the IO monad in here and implement handling of Read and Print.
 eval :: Sequence -> Maybe Value
 eval tokens =
   let
@@ -17,47 +29,50 @@ eval tokens =
   in
     -- If there is exactly one element on the stack,
     -- then we are successful, and return the element, otherwise we have failed
-    if length finalSt == 1 then return . head  $ finalSt else Nothing
+    case finalSt of
+      Right [x]      -> return x
+      Left (Err err) -> error err
+      _              -> error "Failed to evaluate somehow"
 
 -- | Evaluate one token from the top of the stack.
-eval' :: Stack -> Token -> Stack
+eval' :: Stack -> Token -> Either IOResult Stack
 eval' st token =
   case token of
     -- Push the new value on top of the stack
-    Val v -> v:st
+    Val v -> return (v:st)
     -- Evaluate the result of applying a builtin to the stack
     Bi bi -> evalBuiltin bi st
     -- Evaluate new value, and push it onto the stack
     Op op -> evalOperator op st
 
 -- | Evaluate all the tokens in a sequence in the context of a stack.
-eval'' :: Sequence -> Stack -> Stack
-eval'' seq st = foldl eval' st seq
+eval'' :: Sequence -> Stack -> Either IOResult Stack
+eval'' seq st = foldl (\b a -> b >>= (`eval'` a)) (return st) seq
 
 -- | Evaluate a binary operation on two values, with specific types.
-evalBinaryOp' :: Value -> Value -> Operator -> Value
-evalBinaryOp' (VInt a)   (VInt b)   OAdd     = VInt   $ a + b
-evalBinaryOp' (VInt a)   (VInt b)   OSub     = VInt   $ a - b
-evalBinaryOp' (VInt a)   (VInt b)   OMul     = VInt   $ a * b
-evalBinaryOp' (VInt a)   (VInt b)   ODiv     = VFloat $ fromIntegral a / fromIntegral b
-evalBinaryOp' (VInt a)   (VInt b)   ODivI    = VInt   $ a `div` b
-evalBinaryOp' (VInt a)   (VInt b)   OGreater = VBool  $ a > b
-evalBinaryOp' (VInt a)   (VInt b)   OLess    = VBool  $ a < b
-evalBinaryOp' (VFloat a) (VFloat b) OAdd     = VFloat $ a + b
-evalBinaryOp' (VFloat a) (VFloat b) OSub     = VFloat $ a - b
-evalBinaryOp' (VFloat a) (VFloat b) OMul     = VFloat $ a * b
-evalBinaryOp' (VFloat a) (VFloat b) ODiv     = VFloat $ a / b
-evalBinaryOp' (VFloat a) (VFloat b) ODivI    = VInt   $ floor a `div` floor b
-evalBinaryOp' (VFloat a) (VFloat b) OGreater = VBool  $ a > b
-evalBinaryOp' (VFloat a) (VFloat b) OLess    = VBool  $ a < b
-evalBinaryOp' (VBool a)  (VBool b)  OAnd     = VBool  $ a && b
-evalBinaryOp' (VBool a)  (VBool b)  OOr      = VBool  $ a || b
-evalBinaryOp' a                 b   OEqual   = VBool  $ a == b
-evalBinaryOp' _ _ _ = error "Tried to apply binary operator to incompatible operands"
+evalBinaryOp' :: Value -> Value -> Operator -> Either IOResult Value
+evalBinaryOp' (VInt a)   (VInt b)   OAdd     = return . VInt   $ a + b
+evalBinaryOp' (VInt a)   (VInt b)   OSub     = return . VInt   $ a - b
+evalBinaryOp' (VInt a)   (VInt b)   OMul     = return . VInt   $ a * b
+evalBinaryOp' (VInt a)   (VInt b)   ODiv     = return . VFloat $ fromIntegral a / fromIntegral b
+evalBinaryOp' (VInt a)   (VInt b)   ODivI    = return . VInt   $ a `div` b
+evalBinaryOp' (VInt a)   (VInt b)   OGreater = return . VBool  $ a > b
+evalBinaryOp' (VInt a)   (VInt b)   OLess    = return . VBool  $ a < b
+evalBinaryOp' (VFloat a) (VFloat b) OAdd     = return . VFloat $ a + b
+evalBinaryOp' (VFloat a) (VFloat b) OSub     = return . VFloat $ a - b
+evalBinaryOp' (VFloat a) (VFloat b) OMul     = return . VFloat $ a * b
+evalBinaryOp' (VFloat a) (VFloat b) ODiv     = return . VFloat $ a / b
+evalBinaryOp' (VFloat a) (VFloat b) ODivI    = return . VInt   $ floor a `div` floor b
+evalBinaryOp' (VFloat a) (VFloat b) OGreater = return . VBool  $ a > b
+evalBinaryOp' (VFloat a) (VFloat b) OLess    = return . VBool  $ a < b
+evalBinaryOp' (VBool a)  (VBool b)  OAnd     = return . VBool  $ a && b
+evalBinaryOp' (VBool a)  (VBool b)  OOr      = return . VBool  $ a || b
+evalBinaryOp' a                 b   OEqual   = return . VBool  $ a == b
+evalBinaryOp' _ _ _ = Left $ Err "Tried to apply binary operator to incompatible operands"
 
 -- | Evaluate a binary operation on two values.
 -- Coerces ints into floats, but disallows all other coercions.
-evalBinaryOp :: Value -> Value -> Operator -> Value
+evalBinaryOp :: Value -> Value -> Operator -> Either IOResult Value
 -- Normal integer operation.
 evalBinaryOp (VInt a) (VInt b) op =
   evalBinaryOp' (VInt a) (VInt b) op
@@ -77,44 +92,51 @@ evalBinaryOp a b op =
 
 -- | Evaluate a unary operation on a value.
 -- Currently not is the only unary operator.
-evalUnaryOp :: Value -> Operator -> Value
-evalUnaryOp (VInt v)   ONot = VInt (-v)
-evalUnaryOp (VFloat v) ONot = VFloat (-v)
-evalUnaryOp (VBool v)  ONot = VBool (not v)
-evalUnaryOp _ _ = error "Tried to evaluate an unary operator on unsupported data type or with no-unary operator"
+evalUnaryOp :: Value -> Operator -> Either IOResult Value
+evalUnaryOp (VInt v)   ONot = return . VInt $ (-v)
+evalUnaryOp (VFloat v) ONot = return . VFloat $ (-v)
+evalUnaryOp (VBool v)  ONot = return . VBool $ not v
+evalUnaryOp _ _ = Left $ Err "Tried to evaluate an unary operator on unsupported data type or with no-unary operator"
 
 -- | Evaluate an operator by deciding if it is binary or unary and calling the right function.
-evalOperator :: Operator -> Stack -> Stack
+evalOperator :: Operator -> Stack -> Either IOResult Stack
 evalOperator op st
   | op `elem` [OAdd, OSub, OMul, ODiv, ODivI, OGreater, OLess, OEqual, OAnd, OOr]
-          = let (a:b:st') = st in evalBinaryOp b a op : st'
+    = do
+      let (a:b:st') = st
+      res <- evalBinaryOp b a op
+      return (res:st')
   | op == ONot
-          = let (a:st') = st in evalUnaryOp a op : st'
-  | otherwise = error "Operator not implemented"
+    = do
+      let (a:st') = st
+      res <- evalUnaryOp a op
+      return (res:st')
+  | otherwise = Left $ Err "Operator not implemented"
 
 -- | Evaluate a builtin operation onto the stack.
-evalBuiltin :: Builtin -> Stack -> Stack
-evalBuiltin BDup          = evalBDup
-evalBuiltin BSwp          = evalBSwp
-evalBuiltin BPop          = evalBPop
-evalBuiltin BParseInteger = evalBParseInteger
-evalBuiltin BParseFloat   = evalBParseFloat
-evalBuiltin BWords        = evalBWords
-evalBuiltin BHead         = evalBHead
-evalBuiltin BTail         = evalBTail
-evalBuiltin BEmpty        = evalBEmpty
-evalBuiltin BLength       = evalBLength
-evalBuiltin BCons         = evalBCons
-evalBuiltin BAppend       = evalBAppend
-evalBuiltin BExec         = evalBExec
-evalBuiltin BTimes        = evalBTimes
-evalBuiltin BMap          = evalBMap
-evalBuiltin BFoldl        = evalBFoldl
-evalBuiltin BEach         = evalBEach
-evalBuiltin BIf           = evalBIf
-evalBuiltin _             = error "Tried to evaluate an unsupported builtin"
+evalBuiltin :: Builtin -> Stack -> Either IOResult Stack
+evalBuiltin BDup          st = return . evalBDup $ st
+evalBuiltin BSwp          st = return . evalBSwp $ st
+evalBuiltin BPop          st = return . evalBPop $ st
+evalBuiltin BParseInteger st = return . evalBParseInteger $ st
+evalBuiltin BParseFloat   st = return . evalBParseFloat $ st
+evalBuiltin BWords        st = return . evalBWords $ st
+evalBuiltin BHead         st = return . evalBHead $ st
+evalBuiltin BTail         st = return . evalBTail $ st
+evalBuiltin BEmpty        st = return . evalBEmpty $ st
+evalBuiltin BLength       st = return . evalBLength $ st
+evalBuiltin BCons         st = return . evalBCons $ st
+evalBuiltin BAppend       st = return . evalBAppend $ st
+evalBuiltin BExec         st = evalBExec st
+evalBuiltin BTimes        st = evalBTimes st
+evalBuiltin BMap          st = return . evalBMap $ st
+evalBuiltin BFoldl        st = return . evalBFoldl $ st
+evalBuiltin BEach         st = return . evalBEach $ st
+evalBuiltin BIf           st = return . evalBIf $ st
+evalBuiltin _ _ = Left $ Err "Tried to evaluate an unsupported builtin"
 
 -- The following builtins will simply terminate the execution of the interpreter if they are called on an invalid stack
+-- TODO: Make them return appropriate error messages instead of throwing.
 
 -- Stack operations ---------------------------------------------------------------------------
 
@@ -218,16 +240,20 @@ evalBAppend ((VString xs):(VString ys):st) = VString (ys ++ xs):st
 
 -- Quotation operations -----------------------------------------------------------------------
 
-evalQuotation :: Value -> Stack -> Stack
-evalQuotation (VQuotation inst) = eval'' inst
-evalQuotation _ = error "Tried to evaluate something that is not a quotation as a quotation"
+evalQuotation :: Value -> Stack -> Either IOResult Stack
+evalQuotation (VQuotation inst) st = eval'' inst st
+evalQuotation _ _ = Left $ Err "Tried to evaluate something that is not a quotation as a quotation"
 
-evalBExec :: Stack -> Stack
+evalBExec :: Stack -> Either IOResult Stack
 evalBExec (q:st) = evalQuotation q st
+evalBExec _ = Left $ Err "Tried to evaluate `exec` but did not find a quotation on the stack"
 
-evalBTimes :: Stack -> Stack
-evalBTimes (_:(VInt 0):st) = st
-evalBTimes (q:(VInt n):st) = q : VInt (n-1) : evalQuotation q st
+evalBTimes :: Stack -> Either IOResult Stack
+evalBTimes (_:(VInt 0):st) = return st
+evalBTimes (q:(VInt n):st) = do
+  res <- evalQuotation q st
+  return (q : VInt (n-1) : res)
+evalBTimes _ = Left $ Err "Tried to evaluate `times` but did not find the right values on the stack"
 
 evalBMap :: Stack -> Stack
 evalBMap = undefined
