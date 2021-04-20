@@ -31,6 +31,7 @@ eval tokens =
     -- then we are successful, and return the element, otherwise we have failed
     case finalSt of
       Right [x]      -> return x
+      Right xs       -> error $ "Multiple return values: " ++ show xs
       Left (Err err) -> error err
       _              -> error "Failed to evaluate somehow"
 
@@ -129,10 +130,10 @@ evalBuiltin BCons         st = return . evalBCons $ st
 evalBuiltin BAppend       st = return . evalBAppend $ st
 evalBuiltin BExec         st = evalBExec st
 evalBuiltin BTimes        st = evalBTimes st
-evalBuiltin BMap          st = return . evalBMap $ st
-evalBuiltin BFoldl        st = return . evalBFoldl $ st
-evalBuiltin BEach         st = return . evalBEach $ st
-evalBuiltin BIf           st = return . evalBIf $ st
+evalBuiltin BMap          st = evalBMap st
+evalBuiltin BFoldl        st = evalBFoldl st
+evalBuiltin BEach         st = evalBEach st
+evalBuiltin BIf           st = evalBIf st
 evalBuiltin _ _ = Left $ Err "Tried to evaluate an unsupported builtin"
 
 -- The following builtins will simply terminate the execution of the interpreter if they are called on an invalid stack
@@ -240,29 +241,33 @@ evalBAppend ((VString xs):(VString ys):st) = VString (ys ++ xs):st
 
 -- Quotation operations -----------------------------------------------------------------------
 
+-- | Evaluate a quotation in the context of a stack.
+-- Evaluating anything that is not a quotation as a quotation just results in that value being put back onto the stack.
 evalQuotation :: Value -> Stack -> Either IOResult Stack
 evalQuotation (VQuotation inst) st = eval'' inst st
-evalQuotation _ _ = Left $ Err "Tried to evaluate something that is not a quotation as a quotation"
+evalQuotation v st = return $ v:st
 
 evalBExec :: Stack -> Either IOResult Stack
 evalBExec (q:st) = evalQuotation q st
 evalBExec _ = Left $ Err "Tried to evaluate `exec` but did not find a quotation on the stack"
 
 evalBTimes :: Stack -> Either IOResult Stack
-evalBTimes (_:(VInt 0):st) = return st
-evalBTimes (q:(VInt n):st) = do
+evalBTimes ((VInt 0):_:st) = return st
+evalBTimes ((VInt n):q:st) = do
   res <- evalQuotation q st
-  return (q : VInt (n-1) : res)
+  evalBTimes (VInt (n-1) : q : res)
 evalBTimes _ = Left $ Err "Tried to evaluate `times` but did not find the right values on the stack"
 
-evalBMap :: Stack -> Stack
+evalBMap :: Stack -> Either IOResult Stack
 evalBMap = undefined
 
-evalBFoldl :: Stack -> Stack
+evalBFoldl :: Stack -> Either IOResult Stack
 evalBFoldl = undefined
 
-evalBEach :: Stack -> Stack
+evalBEach :: Stack -> Either IOResult Stack
 evalBEach = undefined
 
-evalBIf :: Stack -> Stack
-evalBIf = undefined
+evalBIf :: Stack -> Either IOResult Stack
+evalBIf (elseq:thenq:(VBool cond):st)
+  = evalQuotation (if cond then thenq else elseq) st
+evalBIf _ = Left $ Err "Tried to evaluate `if`, but could not find all three of `condition`, `if branch`, and `else branch`, or they were not in the right order"

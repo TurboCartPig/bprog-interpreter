@@ -14,6 +14,7 @@ Most of these differences are minor and silly, they should not really matter, bu
  * swap is swp
  * Strings are quoted with no space surrounding the string. E.g. `"hello"` instead of `" hello "`. In fact the second one would not parse correctly.
  * unbound symbols do not evaluate to themselves. This seems like a silly artifact of how lone symbols are also part of strings according to the spec.
+ * Control flow operations are implemented as postfix operators. This means that I can evaluate them only in the context of the stack and symbol table, and without regard for the program instructions. The downside of this is that operators can not be used in branches without `{}`s, as these will be immediately evaluated.
  
 ## Issues with the solution
  
