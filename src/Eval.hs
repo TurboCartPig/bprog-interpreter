@@ -117,18 +117,18 @@ evalOperator op st
 
 -- | Evaluate a builtin operation onto the stack.
 evalBuiltin :: Builtin -> Stack -> Either IOResult Stack
-evalBuiltin BDup          st = return . evalBDup $ st
-evalBuiltin BSwp          st = return . evalBSwp $ st
-evalBuiltin BPop          st = return . evalBPop $ st
-evalBuiltin BParseInteger st = return . evalBParseInteger $ st
-evalBuiltin BParseFloat   st = return . evalBParseFloat $ st
-evalBuiltin BWords        st = return . evalBWords $ st
-evalBuiltin BHead         st = return . evalBHead $ st
-evalBuiltin BTail         st = return . evalBTail $ st
-evalBuiltin BEmpty        st = return . evalBEmpty $ st
-evalBuiltin BLength       st = return . evalBLength $ st
-evalBuiltin BCons         st = return . evalBCons $ st
-evalBuiltin BAppend       st = return . evalBAppend $ st
+evalBuiltin BDup          st = evalBDup st
+evalBuiltin BSwp          st = evalBSwp st
+evalBuiltin BPop          st = evalBPop st
+evalBuiltin BParseInteger st = evalBParseInteger st
+evalBuiltin BParseFloat   st = evalBParseFloat st
+evalBuiltin BWords        st = evalBWords st
+evalBuiltin BHead         st = evalBHead st
+evalBuiltin BTail         st = evalBTail st
+evalBuiltin BEmpty        st = evalBEmpty st
+evalBuiltin BLength       st = evalBLength st
+evalBuiltin BCons         st = evalBCons st
+evalBuiltin BAppend       st = evalBAppend st
 evalBuiltin BExec         st = evalBExec st
 evalBuiltin BTimes        st = evalBTimes st
 evalBuiltin BMap          st = evalBMap st
@@ -145,46 +145,52 @@ evalBuiltin _ _ = Left $ Err "Tried to evaluate an unsupported builtin"
 -- | Duplicate the top element of stack.
 --
 -- >>> evalBDup [VInt 1]
--- [VInt 1,VInt 1]
-evalBDup :: Stack -> Stack
-evalBDup (top:tail) = top : top : tail
+-- Right [VInt 1,VInt 1]
+evalBDup :: Stack -> Either IOResult Stack
+evalBDup (top:tail) = return $ top : top : tail
+evalBDup _ = Left $ Err "Tried to evaluate `dup` with missing or incorrect parameters"
 
 -- | Swap the top elements of stack.
 --
 -- >>> evalBSwp [VInt 1, VInt 2]
--- [VInt 2,VInt 1]
-evalBSwp :: Stack -> Stack
-evalBSwp (a:b:st) = b:a:st
+-- Right [VInt 2,VInt 1]
+evalBSwp :: Stack -> Either IOResult Stack
+evalBSwp (a:b:st) = return $ b:a:st
+evalBSwp _ = Left $ Err "Tried to evaluate `swp` with missing or incorrect parameters"
 
 -- | Pop the top element off stack.
 --
 -- >>> evalBPop [VInt 1, VInt 2]
--- [VInt 2]
-evalBPop :: Stack -> Stack
-evalBPop (_:st) = st
+-- Right [VInt 2]
+evalBPop :: Stack -> Either IOResult Stack
+evalBPop (_:st) = return st
+evalBPop _ = Left $ Err "Tried to evaluate `pop` with missing or incorrect parameters"
 
 -- Stack operations ---------------------------------------------------------------------------
 
 -- | Parse an integer from a string on top of the stack.
 --
 -- >>> evalBParseInteger [VString "12"]
--- [VInt 12]
-evalBParseInteger :: Stack -> Stack
-evalBParseInteger ((VString s):st) = VInt (read s) : st
+-- Right [VInt 12]
+evalBParseInteger :: Stack -> Either IOResult Stack
+evalBParseInteger ((VString s):st) = return $ VInt (read s) : st
+evalBParseInteger _ = Left $ Err "Tried to evaluate `parseInteger` with missing or incorrect parameters"
 
 -- | Parse a floating point from a string on top of the stack.
 --
 -- >>> evalBParseFloat [VString "2.4"]
--- [VFloat 2.4]
-evalBParseFloat :: Stack -> Stack
-evalBParseFloat ((VString s):st) = VFloat (read s) : st
+-- Right [VFloat 2.4]
+evalBParseFloat :: Stack -> Either IOResult Stack
+evalBParseFloat ((VString s):st) = return $ VFloat (read s) : st
+evalBParseFloat _ = Left $ Err "Tried to evaluate `parseFloat` with missing or incorrect parameters"
 
 -- | Split a string into a list of words contained in that string, from the top of the stack.
 --
 -- >>> evalBWords [VString "one two three"]
--- [VList [VString "one",VString "two",VString "three"]]
-evalBWords :: Stack -> Stack
-evalBWords ((VString s):st) = VList (map VString (words s)) : st
+-- Right [VList [VString "one",VString "two",VString "three"]]
+evalBWords :: Stack -> Either IOResult Stack
+evalBWords ((VString s):st) = return $ VList (map VString (words s)) : st
+evalBWords _ = Left $ Err "Tried to evaluate `words` with missing or incorrect parameters"
 
 -- List operations ----------------------------------------------------------------------------
 -- Some list operations are implemented on strings as well,
@@ -193,52 +199,58 @@ evalBWords ((VString s):st) = VList (map VString (words s)) : st
 -- | Get the head of the list on top of the stack
 --
 -- >>> evalBHead [VList [VInt 1, VInt 2 ,VInt 3]]
--- [VInt 1]
-evalBHead :: Stack -> Stack
-evalBHead ((VList xs):st) = head xs:st
+-- Right [VInt 1]
+evalBHead :: Stack -> Either IOResult Stack
+evalBHead ((VList xs):st) = return $ head xs:st
+evalBHead _ = Left $ Err "Tried to evaluate `head` with missing or incorrect parameters"
 
 -- | Get the tail of the list on top of the stack
 --
 -- >>> evalBTail [VList [VInt 1, VInt 2, VInt 3]]
--- [VList [VInt 2,VInt 3]]
-evalBTail :: Stack -> Stack
-evalBTail ((VList xs):st)   = VList (tail xs):st
-evalBTail ((VString xs):st) = VString (tail xs):st
+-- Right [VList [VInt 2,VInt 3]]
+evalBTail :: Stack -> Either IOResult Stack
+evalBTail ((VList xs):st)   = return $ VList (tail xs):st
+evalBTail ((VString xs):st) = return $ VString (tail xs):st
+evalBTail _ = Left $ Err "Tried to evaluate `tail` with missing or incorrect parameters"
 
 -- | Check if the list on top of the stack is empty.
 --
 -- >>> evalBEmpty [VList [VInt 1]]
--- [VBool False]
+-- Right [VBool False]
 --
 -- >>> evalBEmpty [VList []]
--- [VBool True]
-evalBEmpty :: Stack -> Stack
-evalBEmpty ((VList xs):st)   = VBool (null xs):st
-evalBEmpty ((VString xs):st) = VBool (null xs):st
+-- Right [VBool True]
+evalBEmpty :: Stack -> Either IOResult Stack
+evalBEmpty ((VList xs):st)   = return $ VBool (null xs):st
+evalBEmpty ((VString xs):st) = return $ VBool (null xs):st
+evalBEmpty _ = Left $ Err "Tried to evaluate `empty` with missing or incorrect parameters"
 
 -- | Get the length of the list on top of the stack.
 --
 -- >>> evalBLength [VList [VInt 1, VInt 2]]
--- [VInt 2]
-evalBLength :: Stack -> Stack
-evalBLength ((VList xs):st)      = VInt (length xs):st
-evalBLength ((VString xs):st)    = VInt (length xs):st
-evalBLength ((VQuotation xs):st) = VInt (length xs):st -- How this makes any sense is beyond me
+-- Right [VInt 2]
+evalBLength :: Stack -> Either IOResult Stack
+evalBLength ((VList xs):st)      = return $ VInt (length xs):st
+evalBLength ((VString xs):st)    = return $ VInt (length xs):st
+evalBLength ((VQuotation xs):st) = return $ VInt (length xs):st -- How this makes any sense is beyond me
+evalBLength _ = Left $ Err "Tried to evaluate `length` with missing or incorrect parameters"
 
 -- | Cons the top element of stack onto the the list that is the second element of the stack.
 --
 -- >>> evalBCons [VList  [VInt 2, VInt 3], VInt 1]
--- [VList [VInt 1,VInt 2,VInt 3]]
-evalBCons :: Stack -> Stack
-evalBCons ((VList xs):x:st) = VList (x:xs):st
+-- Right [VList [VInt 1,VInt 2,VInt 3]]
+evalBCons :: Stack -> Either IOResult Stack
+evalBCons ((VList xs):x:st) = return $ VList (x:xs):st
+evalBCons _ = Left $ Err "Tried to evaluate `cons` with missing or incorrect parameters"
 
 -- | Append the list on top of the stack onto the list second stack
 --
 -- >>> evalBAppend [VList [VInt 3, VInt 4], (VList [VInt 1, VInt 2])]
--- [VList [VInt 1,VInt 2,VInt 3,VInt 4]]
-evalBAppend :: Stack -> Stack
-evalBAppend ((VList xs):(VList ys):st)     = VList (ys ++ xs):st
-evalBAppend ((VString xs):(VString ys):st) = VString (ys ++ xs):st
+-- Right [VList [VInt 1,VInt 2,VInt 3,VInt 4]]
+evalBAppend :: Stack -> Either IOResult Stack
+evalBAppend ((VList xs):(VList ys):st)     = return $ VList (ys ++ xs):st
+evalBAppend ((VString xs):(VString ys):st) = return $ VString (ys ++ xs):st
+evalBAppend _ = Left $ Err "Tried to evaluate `append` with missing or incorrect parameters"
 
 -- Quotation operations -----------------------------------------------------------------------
 
@@ -246,7 +258,7 @@ evalBAppend ((VString xs):(VString ys):st) = VString (ys ++ xs):st
 -- Evaluating anything that is not a quotation as a quotation just results in that value being put back onto the stack.
 evalQuotation :: Value -> Stack -> Either IOResult Stack
 evalQuotation (VQuotation inst) st = eval'' inst st
-evalQuotation v st = return $ v:st
+evalQuotation v st                 = return $ v:st
 
 evalBExec :: Stack -> Either IOResult Stack
 evalBExec (q:st) = evalQuotation q st
