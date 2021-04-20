@@ -16,6 +16,7 @@ data IOResult
   | Read Stack Sequence
   -- | The program should print a string to stdout, and then resume the evaluation of the program with what is left of the stack and sequence.
   | Print Stack Sequence String
+    deriving (Show, Eq)
 
 -- | Top level evaluation function for any parsed program.
 -- TODO: Drag the IO monad in here and implement handling of Read and Print.
@@ -256,18 +257,47 @@ evalBTimes ((VInt 0):_:st) = return st
 evalBTimes ((VInt n):q:st) = do
   res <- evalQuotation q st
   evalBTimes (VInt (n-1) : q : res)
+
 evalBTimes _ = Left $ Err "Tried to evaluate `times` but did not find the right values on the stack"
 
+-- FIXME: This is just terrible.
 evalBMap :: Stack -> Either IOResult Stack
-evalBMap = undefined
+evalBMap (q:VList xs:st) =
+  return $ VList xs' : st
+  where
+    xs' = map f xs
+
+    f :: Value -> Value
+    f v = case evalQuotation q (v:st) of
+            Right (v':_)   -> v'
+            Left (Err err) -> error err
+            _              -> error "Failed to evaluate map"
+
+evalBMap _ = Left $ Err "Tried to evaluate `map` with missing or incorrect parameters"
 
 evalBFoldl :: Stack -> Either IOResult Stack
-evalBFoldl = undefined
+evalBFoldl (q:acc:VList xs:st) = do
+  res <- foldl f (return acc) xs
+  return (res:st)
+  where
+    f :: Either IOResult Value -> Value -> Either IOResult Value
+    f b a = do
+      b' <- b
+      x <- evalQuotation q (a:b':st)
+      return (head x)
+
+evalBFoldl _ = Left $ Err "Tried to evaluate `foldl` with missing or incorrect parameters"
 
 evalBEach :: Stack -> Either IOResult Stack
-evalBEach = undefined
+evalBEach (_:VList []:st) = return st
+evalBEach (q:VList (x:xs):st) = do
+  res <- evalQuotation q (x:st)
+  evalBEach (q:VList xs:res)
+
+evalBEach _ = Left $ Err "Tried to evaluate `each` with missing or incorrect parameters"
 
 evalBIf :: Stack -> Either IOResult Stack
 evalBIf (elseq:thenq:(VBool cond):st)
   = evalQuotation (if cond then thenq else elseq) st
+
 evalBIf _ = Left $ Err "Tried to evaluate `if`, but could not find all three of `condition`, `if branch`, and `else branch`, or they were not in the right order"
