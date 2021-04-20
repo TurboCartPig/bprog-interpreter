@@ -39,6 +39,7 @@ evalBinaryOp' :: Value -> Value -> Operator -> Value
 evalBinaryOp' (VInt a)   (VInt b)   OAdd     = VInt   $ a + b
 evalBinaryOp' (VInt a)   (VInt b)   OSub     = VInt   $ a - b
 evalBinaryOp' (VInt a)   (VInt b)   OMul     = VInt   $ a * b
+evalBinaryOp' (VInt a)   (VInt b)   ODiv     = VFloat $ fromIntegral a / fromIntegral b
 evalBinaryOp' (VInt a)   (VInt b)   ODivI    = VInt   $ a `div` b
 evalBinaryOp' (VInt a)   (VInt b)   OGreater = VBool  $ a > b
 evalBinaryOp' (VInt a)   (VInt b)   OLess    = VBool  $ a < b
@@ -46,6 +47,7 @@ evalBinaryOp' (VFloat a) (VFloat b) OAdd     = VFloat $ a + b
 evalBinaryOp' (VFloat a) (VFloat b) OSub     = VFloat $ a - b
 evalBinaryOp' (VFloat a) (VFloat b) OMul     = VFloat $ a * b
 evalBinaryOp' (VFloat a) (VFloat b) ODiv     = VFloat $ a / b
+evalBinaryOp' (VFloat a) (VFloat b) ODivI    = VInt   $ floor a `div` floor b
 evalBinaryOp' (VFloat a) (VFloat b) OGreater = VBool  $ a > b
 evalBinaryOp' (VFloat a) (VFloat b) OLess    = VBool  $ a < b
 evalBinaryOp' (VBool a)  (VBool b)  OAnd     = VBool  $ a && b
@@ -56,15 +58,9 @@ evalBinaryOp' _ _ _ = error "Tried to apply binary operator to incompatible oper
 -- | Evaluate a binary operation on two values.
 -- Coerces ints into floats, but disallows all other coercions.
 evalBinaryOp :: Value -> Value -> Operator -> Value
--- Implement special rule for floating point division on two integers.
-evalBinaryOp (VInt a) (VInt b) ODiv =
-  evalBinaryOp' (VFloat . fromIntegral $ a) (VFloat . fromIntegral $ b) ODiv
 -- Normal integer operation.
 evalBinaryOp (VInt a) (VInt b) op =
   evalBinaryOp' (VInt a) (VInt b) op
--- Special rule for converting floating points to ints for int division.
-evalBinaryOp (VFloat a) (VFloat b) ODivI =
-  evalBinaryOp (VInt . floor $ a) (VInt . floor $ b) ODivI
 -- Normal floating point operation.
 evalBinaryOp (VFloat a) (VFloat b) op =
   evalBinaryOp' (VFloat a) (VFloat b) op
