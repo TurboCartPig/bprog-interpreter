@@ -1,5 +1,5 @@
 -- | The tests implemented here are not identical to the official tests,
--- but they are equivilant in terms of what they test.
+-- but they are equivalent in terms of what they test.
 module Main where
 
 import           Data.Maybe      (listToMaybe)
@@ -11,8 +11,6 @@ import           Test.DocTest    (doctest)
 import           Test.Hspec      (Spec, describe, hspec, it)
 import           Test.QuickCheck
 import           Types
-
--- TODO: Implement property tests that test that all primitives parse into their respective Value.
 
 -- | `it` specialized for parser.
 pit :: String -> String -> Value -> Spec
@@ -184,7 +182,21 @@ interpretSpec = do
       iit "[ 1 ] [ 2 3 ] cons"
         (VList [VList [VInt 1], VInt 2, VInt 3])
 
-    -- describe "list quotations" $ do
+    describe "list quotations" $ do
+      iit "[ 1 2 3 ] { 10 * } map"
+        (VList [VInt 10, VInt 20, VInt 30])
+      iit "[ 1 2 3 ] { 1 + } map"
+        (VList [VInt 2, VInt 3, VInt 4])
+      iit "[ 1 2 3 4 ] { dup 2 > { 10 * } { 2 * } if } map"
+        (VList [VInt 2, VInt 4, VInt 30, VInt 40])
+      iit "[ 1 2 3 4 ] { 10 * } each + + +"
+        (VInt 100)
+      iit "[ 1 2 3 4 ] 0 { + } foldl"
+        (VInt 10)
+      iit "[ 2 5 ] 20 { div } foldl"
+        (VInt 2)
+      iit "[ \"1\" \"2\" \"3\" ] { parseInteger } each [ ] cons cons cons"
+        (VList [VInt 1, VInt 2, VInt 3])
 
     -- describe "assignments" $ do
 
@@ -228,7 +240,7 @@ interpretSpec = do
     describe "times" $ do
       iit "{ 100 50 + } 1 times"
         (VInt 150)
-      iit "{ 1 } 5 times [ ] { cons } 5 times { + } 0 foldl"
+      iit "{ 1 } 5 times [ ] { cons } 5 times 0 { + } foldl"
         (VInt 5)
       -- This test from the official tests will not work, see readme for why.
       -- iit "  1   5 times [ ]   cons   5 times   +   0 foldl"
@@ -238,10 +250,6 @@ interpretSpec = do
       -- This test from the official tests has been tweaked to work, by adding { } around +.
       iit "10 5 times { + } 4 times"
         (VInt 50)
-
-    -- describe "loop" $ do
-
-    -- describe "some programs" $ do
 
 main :: IO ()
 main = do
