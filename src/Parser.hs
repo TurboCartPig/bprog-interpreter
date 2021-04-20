@@ -162,6 +162,7 @@ parseVListParts ws =
   -- Here tokens is the parsed tokens,
   -- rest and rest' are the remaining unparsed words,
   -- and x is a parsed value.
+  -- TODO: I might be able to use unfoldr here instead.
   return $ loop (\(tokens, rest) -> case parseValue rest of
                                       Nothing             -> Right (tokens, rest)
                                       Just (Val x, rest') -> Left (tokens ++ [x], rest')) ([], ws)
@@ -192,16 +193,18 @@ parseOperator :: Parser Token
 parseOperator [] = Nothing
 parseOperator (w:ws) =
   (, ws) . Op <$> (
-    (OAdd     <$ string "+" w)   <|>
-    (OSub     <$ string "-" w)   <|>
-    (OMul     <$ string "*" w)   <|>
-    (ODiv     <$ string "/" w)   <|>
+    (OAssign  <$ string ":="  w) <|>
+    (OFun     <$ string "fun" w) <|>
+    (OAdd     <$ string "+"   w) <|>
+    (OSub     <$ string "-"   w) <|>
+    (OMul     <$ string "*"   w) <|>
+    (ODiv     <$ string "/"   w) <|>
     (ODivI    <$ string "div" w) <|>
-    (OGreater <$ string ">" w)   <|>
-    (OLess    <$ string "<" w)   <|>
-    (OEqual   <$ string "==" w)  <|>
-    (OAnd     <$ string "&&" w)  <|>
-    (OOr      <$ string "||" w)  <|>
+    (OGreater <$ string ">"   w) <|>
+    (OLess    <$ string "<"   w) <|>
+    (OEqual   <$ string "=="  w) <|>
+    (OAnd     <$ string "&&"  w) <|>
+    (OOr      <$ string "||"  w) <|>
     (ONot     <$ string "not" w)
   )
 
@@ -212,6 +215,8 @@ parseBuiltin (w:ws) =
     (BDup          <$ string "dup"          w) <|>
     (BSwp          <$ string "swp"          w) <|>
     (BPop          <$ string "pop"          w) <|>
+    (BRead         <$ string "read"         w) <|>
+    (BPrint        <$ string "print"        w) <|>
     (BParseInteger <$ string "parseInteger" w) <|>
     (BParseFloat   <$ string "parseFloat"   w) <|>
     (BWords        <$ string "words"        w) <|>

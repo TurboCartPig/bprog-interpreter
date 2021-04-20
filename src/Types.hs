@@ -2,8 +2,8 @@
 module Types (
   Stack, Sequence,
   Token (Val, Bi, Op),
-  Operator (OAssign, OAdd, OSub, OMul, ODiv, ODivI, OGreater, OLess, OEqual, OAnd, OOr, ONot),
-  Builtin (BDup, BSwp, BPop, BParseInteger, BParseFloat, BWords, BHead, BTail, BEmpty, BLength, BCons, BAppend, BExec, BTimes, BMap, BFoldl, BEach, BIf),
+  Operator (OAssign, OFun, OAdd, OSub, OMul, ODiv, ODivI, OGreater, OLess, OEqual, OAnd, OOr, ONot),
+  Builtin (BDup, BSwp, BPop, BRead, BPrint, BParseInteger, BParseFloat, BWords, BHead, BTail, BEmpty, BLength, BCons, BAppend, BExec, BTimes, BMap, BFoldl, BEach, BIf),
   Value (VInt, VFloat, VBool, VString, VList, VQuotation, VSymbol)
 ) where
 
@@ -23,6 +23,7 @@ data Token
 -- | Binary or unary operator, acting on the top elements of the stack.
 data Operator
   = OAssign
+  | OFun
   | OAdd
   | OSub
   | OMul
@@ -42,8 +43,10 @@ data Builtin
   = BDup
   | BSwp
   | BPop
+  -- IO operations
+  | BRead
+  | BPrint
   -- Sting parsing operations
-  -- TODO: Implement these
   | BParseInteger
   | BParseFloat
   | BWords
