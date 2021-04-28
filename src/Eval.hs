@@ -19,22 +19,22 @@ data IOResult
     deriving (Show, Eq)
 
 -- | Top level evaluation function for any parsed program.
--- TODO: Drag the IO monad in here and implement handling of Read and Print.
-eval :: Sequence -> Either String Value
-eval tokens =
+eval :: Stack -> Sequence -> Either String Value
+eval st tokens =
   let
-    -- Initial stack before evaluation
-    initialSt = [] :: Stack
-    -- Final stack after evaluation
-    finalSt = eval'' tokens initialSt
+    result = eval'' tokens st
   in
-    -- If there is exactly one element on the stack,
-    -- then we are successful, and return the element, otherwise we have failed
-    case finalSt of
-      Right [x]      -> return x
+    case result of
+      Right [x]      -> Right x
       Right xs       -> Left $ "Multiple return values: " ++ show xs
       Left (Err err) -> Left err
-      _              -> Left "Failed to evaluate somehow"
+      -- Left (Read st' tokens') -> do
+      --   input <- getLine
+      --   eval (VString input:st') tokens'
+      -- Left (Print st' tokens' str) -> do
+      --   putStrLn str
+      --   eval st' tokens'
+      _              -> Left "Something went wrong"
 
 -- | Evaluate one token from the top of the stack.
 eval' :: Stack -> Token -> Either IOResult Stack
@@ -120,6 +120,8 @@ evalBuiltin :: Builtin -> Stack -> Either IOResult Stack
 evalBuiltin BDup          st = evalBDup st
 evalBuiltin BSwp          st = evalBSwp st
 evalBuiltin BPop          st = evalBPop st
+evalBuiltin BRead         st = evalBRead st [] -- FIXME: Pass in the sequence being evaluated
+evalBuiltin BPrint        st = evalBPrint st []
 evalBuiltin BParseInteger st = evalBParseInteger st
 evalBuiltin BParseFloat   st = evalBParseFloat st
 evalBuiltin BWords        st = evalBWords st
@@ -135,7 +137,6 @@ evalBuiltin BMap          st = evalBMap st
 evalBuiltin BFoldl        st = evalBFoldl st
 evalBuiltin BEach         st = evalBEach st
 evalBuiltin BIf           st = evalBIf st
-evalBuiltin _ _ = Left $ Err "Tried to evaluate an unsupported builtin"
 
 -- The following builtins will simply terminate the execution of the interpreter if they are called on an invalid stack
 -- TODO: Make them return appropriate error messages instead of throwing.
@@ -165,6 +166,15 @@ evalBSwp _ = Left $ Err "Tried to evaluate `swp` with missing or incorrect param
 evalBPop :: Stack -> Either IOResult Stack
 evalBPop (_:st) = return st
 evalBPop _ = Left $ Err "Tried to evaluate `pop` with missing or incorrect parameters"
+
+-- IO operations ------------------------------------------------------------------------------
+
+evalBRead :: Stack -> Sequence -> Either IOResult Stack
+evalBRead st tokens = Left $ Read st tokens
+
+evalBPrint :: Stack -> Sequence -> Either IOResult Stack
+evalBPrint (VString str:st) tokens = Left $ Print st tokens str
+evalBPrint _ _ = Left $ Err "Tried to eval `print` on something that is not a string"
 
 -- Stack operations ---------------------------------------------------------------------------
 
