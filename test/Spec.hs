@@ -1,5 +1,6 @@
 -- | The tests implemented here are not identical to the official tests,
 -- but they are equivalent in terms of what they test.
+{-# LANGUAGE LambdaCase #-}
 module Main where
 
 import           Data.Maybe      (listToMaybe)
@@ -16,13 +17,16 @@ import           Types
 pit :: String -> String -> Value -> Spec
 pit text input expected = do
   it text $ do
-    (parse input >>= listToMaybe) == Just (Val expected)
+    let parsed = parse input
+    case parsed of
+      Right (x:_) -> x == Val expected
+      _ -> False
 
 -- | `it` specialized for interpret.
 iit :: String -> Value -> Spec
 iit input expected = do
   it input $ do
-    interpret input == Just expected
+    interpret input == Right expected
 
 -- | Property tests parsing ints and floats.
 -- Here are the reasons we can not property test the other primitives:
@@ -34,9 +38,9 @@ parsePropertySpec :: Spec
 parsePropertySpec = do
   describe "parser" $ do
     it "parses ints" $ do
-      property $ \x -> (parse . show $ x) == Just [Val (VInt x)]
+      property $ \x -> (parse . show $ x) == Right [Val (VInt x)]
     it "parses floats" $ do
-      property $ \x -> (parse . show $ x) == Just [Val (VFloat x)]
+      property $ \x -> (parse . show $ x) == Right [Val (VFloat x)]
 
 -- | Some basic unit tests for parsing primitive values.
 parseSpec :: Spec

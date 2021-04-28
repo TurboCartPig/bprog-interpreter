@@ -20,7 +20,7 @@ data IOResult
 
 -- | Top level evaluation function for any parsed program.
 -- TODO: Drag the IO monad in here and implement handling of Read and Print.
-eval :: Sequence -> Maybe Value
+eval :: Sequence -> Either String Value
 eval tokens =
   let
     -- Initial stack before evaluation
@@ -32,9 +32,9 @@ eval tokens =
     -- then we are successful, and return the element, otherwise we have failed
     case finalSt of
       Right [x]      -> return x
-      Right xs       -> error $ "Multiple return values: " ++ show xs
-      Left (Err err) -> error err
-      _              -> error "Failed to evaluate somehow"
+      Right xs       -> Left $ "Multiple return values: " ++ show xs
+      Left (Err err) -> Left err
+      _              -> Left "Failed to evaluate somehow"
 
 -- | Evaluate one token from the top of the stack.
 eval' :: Stack -> Token -> Either IOResult Stack

@@ -41,15 +41,17 @@ alphanumeric :: String -> Maybe String
 alphanumeric s = if isAlphaNum s then Just s else Nothing
 
 -- | Top level parse function, takes string from file or repl and parses it into tokens.
-parse :: String -> Maybe [Token]
+parse :: String -> Either String Sequence
 parse s = let
     ws = words s
   in
-    parse' ws
+    case parse' ws of
+      Just xs -> Right xs
+      Nothing -> Left "Failed to parse input"
 
 -- | Parse a list of words into tokens
 -- This is basically a weird fold.
-parse' :: [String] -> Maybe [Token]
+parse' :: [String] -> Maybe Sequence
 parse' [] = Just []
 parse' ws = do
   (token, rest) <- parseToken ws
