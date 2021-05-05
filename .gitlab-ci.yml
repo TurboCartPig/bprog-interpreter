@@ -1,0 +1,19 @@
+image: haskell:8.10
+
+# Define our stages
+stages:
+  - build
+
+# Define build stage that builds and tests the project
+# Stack's ability to download ghc toolchain has been turned off,
+# as it does not make sense when using docker images.
+build:
+  stage: build
+  script:
+    - stack build
+    - stack test
+  cache:
+    key: stack-cache
+    paths:
+      - .stack-work/
+
